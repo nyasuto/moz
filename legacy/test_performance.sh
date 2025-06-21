@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 TEST_DATA_SIZE=${1:-10000}
-RESULTS_DIR="benchmark_results"
+RESULTS_DIR="../benchmark_results"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULT_FILE="$RESULTS_DIR/performance_${TIMESTAMP}.json"
 

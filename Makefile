@@ -30,21 +30,21 @@ help:
 # 開発環境セットアップ
 install:
 	@echo "📦 依存関係のインストール..."
-	@chmod +x *.sh
-	@echo "✅ シェルスクリプトに実行権限を付与しました"
+	@chmod +x legacy/*.sh 2>/dev/null || true
+	@echo "✅ レガシーシェルスクリプトに実行権限を付与しました"
 
 # 開発用クイックスタート
 dev: install
 	@echo "🚀 開発環境セットアップ完了"
-	@echo "💡 使用例:"
-	@echo "  ./put.sh name Alice"
-	@echo "  ./get.sh name"
-	@echo "  ./list.sh"
+	@echo "💡 Phase 1 レガシー使用例:"
+	@echo "  ./legacy/put.sh name Alice"
+	@echo "  ./legacy/get.sh name"
+	@echo "  ./legacy/list.sh"
 
-# テスト実行
+# テスト実行 (Legacy Phase 1)
 test:
-	@echo "🧪 基本機能テスト実行中..."
-	@./test_performance.sh 1000
+	@echo "🧪 Phase 1 レガシーテスト実行中..."
+	@./legacy/test_performance.sh 1000
 
 # カバレッジ付きテスト
 test-cov: test
@@ -52,9 +52,9 @@ test-cov: test
 
 # リンティング (shellcheck使用)
 lint:
-	@echo "🔍 シェルスクリプトのリンティング中..."
+	@echo "🔍 レガシーシェルスクリプトのリンティング中..."
 	@if command -v shellcheck >/dev/null 2>&1; then \
-		shellcheck *.sh; \
+		shellcheck legacy/*.sh; \
 	else \
 		echo "⚠️  shellcheck がインストールされていません"; \
 		echo "   brew install shellcheck でインストールしてください"; \
@@ -62,9 +62,9 @@ lint:
 
 # フォーマット (shfmt使用)
 format:
-	@echo "✨ シェルスクリプトのフォーマット中..."
+	@echo "✨ レガシーシェルスクリプトのフォーマット中..."
 	@if command -v shfmt >/dev/null 2>&1; then \
-		shfmt -w -i 4 *.sh; \
+		shfmt -w -i 4 legacy/*.sh; \
 		echo "✅ フォーマット完了"; \
 	else \
 		echo "⚠️  shfmt がインストールされていません"; \
@@ -73,8 +73,8 @@ format:
 
 # タイプチェック (基本的な構文チェック)
 type-check:
-	@echo "🔍 シェルスクリプトの構文チェック中..."
-	@for script in *.sh; do \
+	@echo "🔍 レガシーシェルスクリプトの構文チェック中..."
+	@for script in legacy/*.sh; do \
 		if [ -f "$$script" ]; then \
 			bash -n "$$script" && echo "✅ $$script" || echo "❌ $$script"; \
 		fi \

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-RESULTS_DIR="benchmark_results"
+RESULTS_DIR="../benchmark_results"
 
 if [ ! -d "$RESULTS_DIR" ]; then
     echo "❌ 結果ディレクトリが見つかりません: $RESULTS_DIR"
@@ -80,5 +80,5 @@ fi
 
 echo ""
 echo "📋 利用可能なコマンド:"
-echo "  ./test_performance.sh 1000  # 1000件でテスト実行"
-echo "  ./analyze_performance.sh    # このレポート表示"
+echo "  ./legacy/test_performance.sh 1000  # 1000件でテスト実行"
+echo "  ./legacy/analyze_performance.sh    # このレポート表示"
