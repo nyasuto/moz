@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-RESULTS_DIR="../benchmark_results"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESULTS_DIR="$SCRIPT_DIR/../benchmark_results"
 
 if [ ! -d "$RESULTS_DIR" ]; then
     echo "❌ 結果ディレクトリが見つかりません: $RESULTS_DIR"
