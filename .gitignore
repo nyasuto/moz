@@ -17,3 +17,30 @@ moz.log
 
 # ログファイル
 *.log
+
+# Go関連
+# バイナリファイル
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# テスト・ベンチマーク
+*.test
+*.out
+*.prof
+
+# Go modules (コミットするため除外しない)
+# go.mod
+# go.sum
+
+# Go vendor (使用する場合)
+vendor/
+
+# Go build cache
+.cache/
+
+# Delve デバッガー
+__debug_bin
