@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy
 
 # Default target
 help:
@@ -19,6 +19,13 @@ help:
 	@echo "  make install    - 依存関係インストール"
 	@echo "  make build      - ビルド"
 	@echo "  make clean      - クリーンアップ"
+	@echo ""
+	@echo "🐹 Go関連コマンド:"
+	@echo "  make go-build   - Goアプリケーションビルド"
+	@echo "  make go-test    - Goテスト実行"
+	@echo "  make go-run     - Goアプリケーション実行"
+	@echo "  make go-clean   - Goビルド成果物クリーンアップ"
+	@echo "  make go-mod-tidy - Go依存関係整理"
 	@echo ""
 	@echo "📋 PR準備:"
 	@echo "  make pr-ready   - PR提出前チェック"
@@ -167,3 +174,36 @@ env-info:
 	@command -v shellcheck >/dev/null 2>&1 && echo "    ✅ shellcheck" || echo "    ❌ shellcheck"
 	@command -v shfmt >/dev/null 2>&1 && echo "    ✅ shfmt" || echo "    ❌ shfmt"
 	@command -v awk >/dev/null 2>&1 && echo "    ✅ awk" || echo "    ❌ awk"
+	@command -v go >/dev/null 2>&1 && echo "    ✅ go ($$(go version))" || echo "    ❌ go"
+
+# Go関連ターゲット
+go-build:
+	@echo "🐹 Goアプリケーションビルド中..."
+	@go build -o bin/moz ./cmd/moz
+	@echo "✅ ビルド完了: bin/moz"
+
+go-test:
+	@echo "🧪 Goテスト実行中..."
+	@go test -v ./...
+	@echo "✅ テスト完了"
+
+go-run:
+	@echo "🐹 Goアプリケーション実行中..."
+	@if [ -z "$(ARGS)" ]; then \
+		echo "使用例: make go-run ARGS='put name Alice'"; \
+		echo "      make go-run ARGS='get name'"; \
+		echo "      make go-run ARGS='list'"; \
+	else \
+		go run ./cmd/moz $(ARGS); \
+	fi
+
+go-clean:
+	@echo "🧹 Goビルド成果物クリーンアップ中..."
+	@rm -rf bin/
+	@go clean
+	@echo "✅ クリーンアップ完了"
+
+go-mod-tidy:
+	@echo "🐹 Go依存関係整理中..."
+	@go mod tidy
+	@echo "✅ 依存関係整理完了"
