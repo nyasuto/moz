@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-vet go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check
 
 # Default target
 help:
@@ -27,6 +27,20 @@ help:
 	@echo "  make go-clean   - Goビルド成果物クリーンアップ"
 	@echo "  make go-mod-tidy - Go依存関係整理"
 	@echo ""
+	@echo "🔍 Go品質ツール:"
+	@echo "  make go-lint    - Goコードリンティング (golangci-lint)"
+	@echo "  make go-fmt     - Goコードフォーマット"
+	@echo "  make go-vet     - Goコード解析"
+	@echo "  make go-test-cov - Goテストカバレッジ"
+	@echo "  make go-race    - レース条件検出テスト"
+	@echo "  make go-bench   - ベンチマークテスト"
+	@echo ""
+	@echo "🛠️ Go開発ツール:"
+	@echo "  make go-install - バイナリをGOPATH/binにインストール"
+	@echo "  make go-tools-install - 開発ツールインストール"
+	@echo "  make go-security - セキュリティスキャン (gosec)"
+	@echo "  make go-dep-check - 脆弱性チェック (govulncheck)"
+	@echo ""
 	@echo "📋 PR準備:"
 	@echo "  make pr-ready   - PR提出前チェック"
 	@echo "  make git-hooks  - Gitフック設定"
@@ -35,9 +49,11 @@ help:
 	@echo "  make env-info   - 環境情報表示"
 
 # 開発環境セットアップ
-install:
+install: go-tools-install
 	@echo "📦 依存関係のインストール..."
 	@chmod +x legacy/*.sh 2>/dev/null || true
+	@go mod download
+	@echo "✅ Go依存関係ダウンロード完了"
 	@echo "✅ レガシーシェルスクリプトに実行権限を付与しました"
 
 # 開発用クイックスタート
@@ -48,17 +64,18 @@ dev: install
 	@echo "  ./legacy/get.sh name"
 	@echo "  ./legacy/list.sh"
 
-# テスト実行 (Legacy Phase 1)
-test:
-	@echo "🧪 Phase 1 レガシーテスト実行中..."
+# テスト実行 (統合)
+test: go-test
+	@echo "🧪 レガシーテスト実行中..."
 	@./legacy/test_performance.sh 1000
+	@echo "🎯 全テスト完了"
 
 # カバレッジ付きテスト
-test-cov: test
+test-cov: go-test-cov test
 	@echo "📊 テストカバレッジ: 基本機能テスト完了"
 
-# リンティング (shellcheck使用)
-lint:
+# リンティング (統合)
+lint: go-lint
 	@echo "🔍 レガシーシェルスクリプトのリンティング中..."
 	@if command -v shellcheck >/dev/null 2>&1; then \
 		shellcheck legacy/*.sh; \
@@ -67,8 +84,8 @@ lint:
 		echo "   brew install shellcheck でインストールしてください"; \
 	fi
 
-# フォーマット (shfmt使用)
-format:
+# フォーマット (統合)
+format: go-fmt
 	@echo "✨ レガシーシェルスクリプトのフォーマット中..."
 	@if command -v shfmt >/dev/null 2>&1; then \
 		shfmt -w -i 4 legacy/*.sh; \
@@ -78,8 +95,8 @@ format:
 		echo "   brew install shfmt でインストールしてください"; \
 	fi
 
-# タイプチェック (基本的な構文チェック)
-type-check:
+# タイプチェック (統合)
+type-check: go-vet
 	@echo "🔍 レガシーシェルスクリプトの構文チェック中..."
 	@for script in legacy/*.sh; do \
 		if [ -f "$$script" ]; then \
@@ -88,7 +105,7 @@ type-check:
 	done
 
 # 品質チェック統合
-quality: lint type-check
+quality: lint type-check go-security
 	@echo "🎯 品質チェック完了"
 
 # 自動修正
@@ -151,16 +168,16 @@ git-hooks:
 	@echo "  - ブランチ命名規則チェック"
 	@echo "  - 品質チェック自動実行"
 
-# ビルド
-build:
-	@echo "🏗️  ビルド処理（シェル版では不要）"
+# ビルド (統合)
+build: go-build
 	@echo "✅ ビルド完了"
 
-# クリーンアップ
-clean:
+# クリーンアップ (統合)
+clean: go-clean
 	@echo "🧹 クリーンアップ中..."
 	@rm -f moz.log
 	@rm -f /tmp/moz_*
+	@rm -f coverage.out coverage.html
 	@echo "✅ クリーンアップ完了"
 
 # 環境情報表示
@@ -175,6 +192,9 @@ env-info:
 	@command -v shfmt >/dev/null 2>&1 && echo "    ✅ shfmt" || echo "    ❌ shfmt"
 	@command -v awk >/dev/null 2>&1 && echo "    ✅ awk" || echo "    ❌ awk"
 	@command -v go >/dev/null 2>&1 && echo "    ✅ go ($$(go version))" || echo "    ❌ go"
+	@command -v golangci-lint >/dev/null 2>&1 && echo "    ✅ golangci-lint" || echo "    ❌ golangci-lint"
+	@command -v gosec >/dev/null 2>&1 && echo "    ✅ gosec" || echo "    ❌ gosec"
+	@command -v govulncheck >/dev/null 2>&1 && echo "    ✅ govulncheck" || echo "    ❌ govulncheck"
 
 # Go関連ターゲット
 go-build:
@@ -207,3 +227,76 @@ go-mod-tidy:
 	@echo "🐹 Go依存関係整理中..."
 	@go mod tidy
 	@echo "✅ 依存関係整理完了"
+
+# Go品質ツール
+go-lint:
+	@echo "🔍 Goコードリンティング中..."
+	@if [ -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
+		$$(go env GOPATH)/bin/golangci-lint run ./...; \
+	elif command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run ./...; \
+	else \
+		echo "⚠️  golangci-lint がインストールされていません"; \
+		echo "   make go-tools-install を実行してください"; \
+	fi
+
+go-fmt:
+	@echo "🎨 Goコードフォーマット中..."
+	@go fmt ./...
+	@echo "✅ フォーマット完了"
+
+go-vet:
+	@echo "🔍 Goコード解析中..."
+	@go vet ./...
+	@echo "✅ 解析完了"
+
+go-test-cov:
+	@echo "📊 Goテストカバレッジ測定中..."
+	@go test -v -race -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ カバレッジレポート生成完了: coverage.html"
+
+go-race:
+	@echo "🏃 レース条件検出テスト実行中..."
+	@go test -race ./...
+	@echo "✅ レース条件検出テスト完了"
+
+go-bench:
+	@echo "⚡ ベンチマークテスト実行中..."
+	@go test -bench=. -benchmem ./...
+	@echo "✅ ベンチマークテスト完了"
+
+# Go開発ツール
+go-install:
+	@echo "📦 バイナリインストール中..."
+	@go install ./cmd/moz
+	@echo "✅ インストール完了: $$(go env GOPATH)/bin/moz"
+
+go-tools-install:
+	@echo "🛠️ Go開発ツールインストール中..."
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "⚠️  gosec インストールをスキップ (パッケージ問題)"
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@echo "✅ 開発ツールインストール完了"
+
+go-security:
+	@echo "🔒 セキュリティスキャン実行中..."
+	@if [ -f "$$(go env GOPATH)/bin/gosec" ]; then \
+		$$(go env GOPATH)/bin/gosec ./...; \
+	elif command -v gosec >/dev/null 2>&1; then \
+		gosec ./...; \
+	else \
+		echo "⚠️  gosecが利用できません - go vetでセキュリティチェックを実行"; \
+		go vet ./...; \
+	fi
+
+go-dep-check:
+	@echo "🛡️ 脆弱性チェック実行中..."
+	@if [ -f "$$(go env GOPATH)/bin/govulncheck" ]; then \
+		$$(go env GOPATH)/bin/govulncheck ./...; \
+	elif command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+	else \
+		echo "⚠️  govulncheck がインストールされていません"; \
+		echo "   make go-tools-install を実行してください"; \
+	fi

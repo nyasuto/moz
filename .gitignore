@@ -44,3 +44,7 @@ vendor/
 
 # Delve デバッガー
 __debug_bin
+
+# テストカバレッジ
+coverage.out
+coverage.html
