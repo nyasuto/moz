@@ -33,17 +33,34 @@ moz は、ファイルベース・追記型のキーバリュー型データベ�
 
   
 
-## **📁 初期ディレクトリ構成（フェーズ1：シェル版）**
+## **📁 プロジェクト構成**
 
+### **フェーズ1：シェル版（legacy/）**
 ```
 moz/
-├── moz.log         # 追記専用のデータログファイル
-├── put.sh          # キーと値の追加（または更新）
-├── get.sh          # キーの値を取得
-├── del.sh          # キーの削除
-├── list.sh         # 全件の一覧表示
-├── filter.sh       # 条件付き一覧表示（例：キーに「foo」を含む）
-├── compact.sh      # ログを整理して最新状態にまとめる
+├── legacy/
+│   ├── put.sh          # キーと値の追加（または更新）
+│   ├── get.sh          # キーの値を取得
+│   ├── del.sh          # キーの削除
+│   ├── list.sh         # 全件の一覧表示
+│   ├── filter.sh       # 条件付き一覧表示（例：キーに「foo」を含む）
+│   ├── compact.sh      # ログを整理して最新状態にまとめる
+│   └── test_performance.sh # 性能測定テスト
+└── moz.log         # 追記専用のデータログファイル
+```
+
+### **フェーズ2：Go実装**
+```
+moz/
+├── cmd/
+│   └── moz/
+│       └── main.go     # CLI エントリーポイント
+├── internal/
+│   └── kvstore/
+│       └── kvstore.go  # KVストア実装
+├── go.mod              # Go module 定義
+├── Makefile            # 統合開発コマンド
+└── .gitignore          # Git除外設定
 ```
 
 ## **🧱 フェーズ1：シェルベースのKVストア**
@@ -71,15 +88,42 @@ name    Bob
 
   
 
-## **🔁 フェーズ2：Goによるログ構造型KVストア**
+## **🔁 フェーズ2：Goによるログ構造型KVストア（実装完了✅）**
 
+- 現代的なGoプロジェクト構造を採用
+    
+- cmd/moz/ に CLI エントリーポイント
+    
+- internal/kvstore/ にKVストア実装
+    
+- thread-safe な実装（sync.RWMutex使用）
+    
 - moz.log をそのままGoで読み込んで処理
     
 - メモリ上に map[string]string を構築
     
-- 一定件数ごとに compact() を自動実行
+- compact() 機能で最新状態を再構成
     
-- インデックス対応や性能強化の布石となる
+- Makefileによる統合開発ワークフロー
+
+### **使用方法**
+
+```bash
+# ビルド
+make go-build
+
+# 基本操作
+make go-run ARGS="put name Alice"
+make go-run ARGS="get name"
+make go-run ARGS="list"
+make go-run ARGS="del name"
+make go-run ARGS="compact"
+
+# レガシーシェル版も利用可能
+make dev
+./legacy/put.sh name Bob
+./legacy/get.sh name
+```
     
 
   
