@@ -23,11 +23,11 @@ log_result() {
     local count="$3"
     local ops_per_sec
     ops_per_sec=$(echo "scale=2; $count / $duration" | bc -l 2>/dev/null || echo "0")
-    
+
     echo "  ⏱️  実行時間: ${duration}s"
     echo "  📈 処理速度: ${ops_per_sec} ops/sec"
-    
-    cat >> "$RESULT_FILE" << EOF
+
+    cat >>"$RESULT_FILE" <<EOF
     {
       "operation": "$operation",
       "duration": $duration,
@@ -58,66 +58,66 @@ generate_test_data() {
 test_put_operations() {
     echo "🔧 PUT 操作テスト (${TEST_DATA_SIZE}件)"
     rm -f moz.log
-    
+
     local duration
     duration=$(measure_time bash -c "
         for i in \$(seq 1 $TEST_DATA_SIZE); do
             ./put.sh \"test_key_\$i\" \"test_value_\$i\"
         done
     ")
-    
+
     log_result "put" "$duration" "$TEST_DATA_SIZE"
 }
 
 test_get_operations() {
     echo "🔍 GET 操作テスト (${TEST_DATA_SIZE}件)"
-    
+
     local duration
     duration=$(measure_time bash -c "
         for i in \$(seq 1 $TEST_DATA_SIZE); do
             ./get.sh \"test_key_\$i\" > /dev/null
         done
     ")
-    
+
     log_result "get" "$duration" "$TEST_DATA_SIZE"
 }
 
 test_list_operation() {
     echo "📋 LIST 操作テスト"
-    
+
     local duration
-    duration=$(measure_time ./list.sh > /dev/null)
+    duration=$(measure_time ./list.sh >/dev/null)
     duration=${duration:-0.001}
-    
+
     log_result "list" "$duration" "1"
 }
 
 test_filter_operation() {
     echo "🔎 FILTER 操作テスト"
-    
+
     local duration
-    duration=$(measure_time ./filter.sh "test_key_1" > /dev/null)
+    duration=$(measure_time ./filter.sh "test_key_1" >/dev/null)
     duration=${duration:-0.001}
-    
+
     log_result "filter" "$duration" "1"
 }
 
 test_compact_operation() {
     echo "🗜️ COMPACT 操作テスト"
-    
+
     local duration
     duration=$(measure_time ./compact.sh)
-    
+
     log_result "compact" "$duration" "1"
 }
 
 test_mixed_workload() {
     echo "🔄 混合ワークロードテスト"
     rm -f moz.log
-    
+
     local half_size=$((TEST_DATA_SIZE / 2))
     local duration
-    
+
     duration=$(measure_time bash -c "
         # PUT操作
         for i in \$(seq 1 $half_size); do
@@ -142,7 +142,7 @@ test_mixed_workload() {
         # コンパクション
         ./compact.sh
     ")
-    
+
     local total_ops=$((half_size * 2 + half_size / 2 + half_size / 4 + 1))
     log_result "mixed_workload" "$duration" "$total_ops"
 }
@@ -151,13 +151,13 @@ analyze_file_size() {
     if [ -f "moz.log" ]; then
         local file_size
         local line_count
-        file_size=$(wc -c < moz.log)
-        line_count=$(wc -l < moz.log)
+        file_size=$(wc -c <moz.log)
+        line_count=$(wc -l <moz.log)
         echo "📊 ファイルサイズ分析:"
         echo "  💾 ファイルサイズ: ${file_size} bytes"
         echo "  📄 行数: ${line_count} lines"
-        
-        cat >> "$RESULT_FILE" << EOF
+
+        cat >>"$RESULT_FILE" <<EOF
     {
       "operation": "file_analysis",
       "file_size_bytes": $file_size,
@@ -179,7 +179,7 @@ EOF
     echo "      \"bash_version\": \"$(bash --version | head -1)\""
     echo "    },"
     echo "    \"results\": ["
-} > "$RESULT_FILE"
+} >"$RESULT_FILE"
 
 test_put_operations
 test_get_operations
@@ -191,7 +191,7 @@ analyze_file_size
 
 # JSONファイルの終了
 sed -i '' '$s/,$//' "$RESULT_FILE" 2>/dev/null || sed -i '$s/,$//' "$RESULT_FILE"
-cat >> "$RESULT_FILE" << EOF
+cat >>"$RESULT_FILE" <<EOF
     ]
   }
 }

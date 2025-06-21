@@ -7,8 +7,8 @@ fi
 temp_file=$(mktemp)
 
 while IFS=$'\t' read -r key value; do
-    echo -e "${key}\t${value}" >> "$temp_file"
-done < moz.log
+    echo -e "${key}\t${value}" >>"$temp_file"
+done <moz.log
 
 awk -F'\t' '{
     latest[$1] = $2

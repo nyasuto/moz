@@ -12,4 +12,4 @@ if [[ "$key" =~ $'\t' ]]; then
     exit 1
 fi
 
-echo -e "${key}\t__DELETED__" >> moz.log
+echo -e "${key}\t__DELETED__" >>moz.log
