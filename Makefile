@@ -44,7 +44,7 @@ dev: install
 # テスト実行
 test:
 	@echo "🧪 基本機能テスト実行中..."
-	@./test_basic.sh 2>/dev/null || echo "⚠️  test_basic.sh が見つかりません"
+	@./test_performance.sh 1000
 
 # カバレッジ付きテスト
 test-cov: test
