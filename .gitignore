@@ -1,0 +1,16 @@
+# Moz KVストア データファイル
+moz.log
+
+# 一時ファイル
+*.tmp
+/tmp/moz_*
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# ログファイル
+*.log
