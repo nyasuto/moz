@@ -1,0 +1,121 @@
+name: 🐛 バグレポート
+description: Mozプロジェクトでバグを発見した場合に使用してください
+title: "🐛 [バグ]: "
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 バグレポート
+        
+        バグを報告していただき、ありがとうございます！
+        以下の情報を提供していただくことで、迅速に問題を解決できます。
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: このバグの影響度を選択してください
+      options:
+        - "🚨 緊急 (アプリクラッシュ、セキュリティ問題)"
+        - "⚡ 高 (コア機能、重要なバグ)"
+        - "📝 中 (改善、軽微なバグ)"
+        - "📚 低 (将来機能、ドキュメント)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 影響を受けるコンポーネント
+      description: 問題が発生している部分を選択してください
+      options:
+        - "🐚 Legacy Phase 1 (シェルスクリプト)"
+        - "🔧 Makefile / 開発ツール"
+        - "📊 性能測定システム"
+        - "🔗 Git Hooks"
+        - "🚀 CI/CD"
+        - "📝 ドキュメント"
+        - "🤔 その他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 問題の説明
+      description: 何が起きているかを詳しく説明してください
+      placeholder: |
+        例：
+        - ./legacy/put.sh を実行すると、以下のエラーが発生します
+        - 期待される動作と実際の動作の違い
+        - エラーメッセージの内容
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順
+      description: 問題を再現するための具体的な手順を記載してください
+      placeholder: |
+        1. `make dev` を実行
+        2. `./legacy/put.sh test value` を実行
+        3. エラーが発生する
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作
+      description: 本来どのような動作が期待されるかを記載してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際に何が起きているかを記載してください（エラーメッセージ等も含む）
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境情報
+      description: 問題が発生している環境について教えてください
+      placeholder: |
+        - OS: macOS 14.0 / Ubuntu 22.04 / Windows 11
+        - Shell: bash 5.2.15 / zsh 5.9
+        - 使用しているツール: make, shellcheck等のバージョン
+        - `make env-info` の出力結果があれば貼り付けてください
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ・エラーメッセージ
+      description: 関連するログやエラーメッセージがあれば貼り付けてください
+      render: shell
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: 回避策
+      description: 一時的な回避策があれば記載してください（任意）
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 確認事項
+      description: 以下を確認してから送信してください
+      options:
+        - label: 既存のIssueで同様の問題が報告されていないことを確認しました
+          required: true
+        - label: 問題を再現できることを確認しました
+          required: true
+        - label: CLAUDE.mdの記載内容に従って作業しています
+          required: true

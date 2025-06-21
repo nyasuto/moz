@@ -18,7 +18,7 @@ END {
             print key "\t" latest[key]
         }
     }
-}' "$backup_file" | sort > "$temp_file"
+}' "$backup_file" | sort >"$temp_file"
 
 mv "$temp_file" moz.log
 rm "$backup_file"
