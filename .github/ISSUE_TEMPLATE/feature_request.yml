@@ -1,0 +1,147 @@
+name: ✨ 機能リクエスト
+description: 新機能や改善の提案をお送りください
+title: "✨ [機能]: "
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ 機能リクエスト
+        
+        新機能のご提案ありがとうございます！
+        以下の情報を提供していただくことで、より良い機能を実装できます。
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: この機能の重要度を選択してください
+      options:
+        - "⚡ 高 (コア機能、重要な改善)"
+        - "📝 中 (便利な機能、ユーザビリティ向上)"
+        - "📚 低 (将来機能、nice-to-have)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: 対象フェーズ
+      description: どのフェーズに関連する機能かを選択してください
+      options:
+        - "🐚 Phase 1 (シェルベース - Legacy)"
+        - "🚀 Phase 2 (Go実装 - 予定)"
+        - "🔍 Phase 3+ (インデックス・高度機能)"
+        - "🔧 開発ツール・CI/CD"
+        - "📝 ドキュメント"
+        - "🤔 その他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい問題
+      description: この機能によってどのような問題や不便さが解決されますか？
+      placeholder: |
+        例：
+        - 現在、大量データの処理に時間がかかりすぎる
+        - キーの部分検索ができないため不便
+        - 開発時の○○作業が煩雑
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 提案する解決策
+      description: どのような機能や実装方法を提案しますか？
+      placeholder: |
+        例：
+        - インデックス機能を追加してキー検索を高速化
+        - バッチ操作APIを実装
+        - 自動バックアップ機能
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_cases
+    attributes:
+      label: 具体的な使用例
+      description: この機能をどのように使いたいか、具体例を教えてください
+      placeholder: |
+        例：
+        ```bash
+        # 提案する新しいコマンド
+        ./legacy/search.sh "user_*"  # パターン検索
+        ./legacy/batch_put.sh data.csv  # バッチ登録
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: 期待される効果
+      description: この機能が実装されることで得られる具体的な効果を記載してください
+      placeholder: |
+        例：
+        - 検索性能が10倍向上
+        - データ登録の作業時間が50%短縮
+        - 運用の安定性向上
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 代替案
+      description: 他に考えられる実装方法や回避策があれば記載してください（任意）
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 実装のヒント
+      description: 実装に関するアイデアや技術的な提案があれば記載してください（任意）
+      placeholder: |
+        例：
+        - 既存のcompact.shを拡張してインデックスファイル生成
+        - awkスクリプトでパターンマッチング実装
+        - 新しいMakefileターゲット追加
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: 実装の複雑さ（予想）
+      description: この機能の実装がどの程度複雑かを選択してください
+      options:
+        - "🟢 簡単 (数時間〜1日)"
+        - "🟡 中程度 (数日〜1週間)"
+        - "🟠 複雑 (1週間〜1ヶ月)"
+        - "🔴 非常に複雑 (1ヶ月以上)"
+        - "🤔 わからない"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: compatibility
+    attributes:
+      label: 互換性への配慮
+      description: 既存機能との互換性について確認してください
+      options:
+        - label: 既存のKVストア操作に影響を与えない設計を意識しています
+        - label: 既存のmoz.logファイル形式との互換性を保ちます
+        - label: レガシーコードとの共存を考慮しています
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 確認事項
+      description: 以下を確認してから送信してください
+      options:
+        - label: 既存のIssueで同様の機能が提案されていないことを確認しました
+          required: true
+        - label: README.mdとCLAUDE.mdのプロジェクト方針を理解しています
+          required: true
+        - label: この機能がプロジェクトの目的に合致していると考えています
+          required: true

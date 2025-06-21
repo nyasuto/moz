@@ -1,0 +1,200 @@
+name: 🎯 Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'リリースバージョン (例: v1.0.0)'
+        required: true
+        type: string
+
+env:
+  RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+
+jobs:
+  validate-release:
+    name: 🔍 リリース検証
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 📦 開発ツールインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq bc
+          
+      - name: 🔧 依存関係セットアップ
+        run: make install
+        
+      - name: 🎯 フル品質チェック
+        run: make pr-ready
+        
+      - name: 📊 大規模性能テスト
+        run: ./legacy/test_performance.sh 5000
+        
+      - name: 📈 性能基準チェック
+        run: |
+          echo "📈 性能基準をチェック中..."
+          latest_result=$(ls -t benchmark_results/performance_*.json | head -1)
+          
+          put_speed=$(jq -r '.test_run.results[] | select(.operation == "put") | .ops_per_sec' "$latest_result")
+          get_speed=$(jq -r '.test_run.results[] | select(.operation == "get") | .ops_per_sec' "$latest_result")
+          
+          echo "PUT速度: ${put_speed} ops/sec"
+          echo "GET速度: ${get_speed} ops/sec"
+          
+          # 性能基準（最低限の要求）
+          if (( $(echo "$put_speed < 100" | bc -l) )); then
+            echo "❌ PUT操作の性能が基準以下です (最低100 ops/sec)"
+            exit 1
+          fi
+          
+          if (( $(echo "$get_speed < 50" | bc -l) )); then
+            echo "❌ GET操作の性能が基準以下です (最低50 ops/sec)"
+            exit 1
+          fi
+          
+          echo "✅ 性能基準をクリアしました"
+
+  create-release:
+    name: 🎁 リリース作成
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: 📦 開発ツールインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc
+          
+      - name: 🔧 リリースパッケージ準備
+        run: |
+          mkdir -p release-package
+          
+          # レガシーコード
+          cp -r legacy release-package/
+          
+          # 設定ファイル
+          cp Makefile release-package/
+          cp README.md release-package/
+          cp CLAUDE.md release-package/
+          cp .gitignore release-package/
+          
+          # 最新の性能結果を含める
+          if [ -d "benchmark_results" ]; then
+            cp -r benchmark_results release-package/
+          fi
+          
+      - name: 📊 リリース性能テスト
+        run: |
+          cd release-package
+          make install
+          ./legacy/test_performance.sh 1000
+          
+      - name: 📋 リリースノート生成
+        id: release_notes
+        run: |
+          echo "## 🚀 Moz KVストア ${RELEASE_VERSION}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### 📦 このリリースに含まれるもの" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "#### 🐚 Phase 1: シェルベースKVストア (Legacy)" >> release_notes.md
+          echo "- ✅ 基本的なKVストア操作 (PUT/GET/DELETE/LIST/FILTER)" >> release_notes.md
+          echo "- ✅ 追記型ログファイル設計" >> release_notes.md
+          echo "- ✅ コンパクション機能" >> release_notes.md
+          echo "- ✅ 包括的な性能測定システム" >> release_notes.md
+          echo "- ✅ 自動品質チェック (shellcheck対応)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "#### 🔧 開発ツール" >> release_notes.md
+          echo "- ✅ Makefile統合開発環境" >> release_notes.md
+          echo "- ✅ Git Hooks (ブランチ保護・品質チェック)" >> release_notes.md
+          echo "- ✅ CI/CD パイプライン" >> release_notes.md
+          echo "- ✅ 日本語ドキュメント完備" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # 最新の性能結果を追加
+          if [ -f "release-package/benchmark_results/"*.json ]; then
+            latest_result=$(ls -t release-package/benchmark_results/performance_*.json | head -1)
+            echo "#### 📊 性能ベンチマーク (1000件)" >> release_notes.md
+            echo "" >> release_notes.md
+            put_speed=$(jq -r '.test_run.results[] | select(.operation == "put") | .ops_per_sec' "$latest_result")
+            get_speed=$(jq -r '.test_run.results[] | select(.operation == "get") | .ops_per_sec' "$latest_result")
+            list_speed=$(jq -r '.test_run.results[] | select(.operation == "list") | .ops_per_sec' "$latest_result")
+            compact_speed=$(jq -r '.test_run.results[] | select(.operation == "compact") | .ops_per_sec' "$latest_result")
+            
+            echo "- **PUT操作**: ${put_speed} ops/sec" >> release_notes.md
+            echo "- **GET操作**: ${get_speed} ops/sec" >> release_notes.md
+            echo "- **LIST操作**: ${list_speed} ops/sec" >> release_notes.md
+            echo "- **COMPACT操作**: ${compact_speed} ops/sec" >> release_notes.md
+            echo "" >> release_notes.md
+          fi
+          
+          echo "### 🚀 使用方法" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "# 基本セットアップ" >> release_notes.md
+          echo "make dev" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "# 基本操作" >> release_notes.md
+          echo "./legacy/put.sh name Alice" >> release_notes.md
+          echo "./legacy/get.sh name" >> release_notes.md
+          echo "./legacy/list.sh" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "# 性能測定" >> release_notes.md
+          echo "./legacy/test_performance.sh 1000" >> release_notes.md
+          echo "./legacy/analyze_performance.sh" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 📋 次のフェーズ" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- 🚧 **Phase 2**: Go言語によるログ構造型KVストア実装予定" >> release_notes.md
+          echo "- 🚧 **Phase 3**: インデックス対応・高度機能" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "詳細は [README.md](README.md) と [CLAUDE.md](CLAUDE.md) を参照してください。" >> release_notes.md
+          
+          # GitHubのstep outputに設定
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: 🗜️ リリースパッケージ圧縮
+        run: |
+          tar -czf moz-kvstore-${RELEASE_VERSION}.tar.gz -C release-package .
+          zip -r moz-kvstore-${RELEASE_VERSION}.zip release-package/
+          
+          # チェックサム生成
+          sha256sum moz-kvstore-${RELEASE_VERSION}.tar.gz > checksums.txt
+          sha256sum moz-kvstore-${RELEASE_VERSION}.zip >> checksums.txt
+          
+      - name: 🎁 GitHubリリース作成
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: 🚀 Moz KVストア ${{ env.RELEASE_VERSION }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: |
+            moz-kvstore-${{ env.RELEASE_VERSION }}.tar.gz
+            moz-kvstore-${{ env.RELEASE_VERSION }}.zip
+            checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 📢 リリース完了通知
+        run: |
+          echo "🎉 リリース ${{ env.RELEASE_VERSION }} が正常に作成されました！"
+          echo "📦 ダウンロード可能なアーティファクト:"
+          echo "  - moz-kvstore-${{ env.RELEASE_VERSION }}.tar.gz"
+          echo "  - moz-kvstore-${{ env.RELEASE_VERSION }}.zip"
+          echo "  - checksums.txt (チェックサム検証用)"

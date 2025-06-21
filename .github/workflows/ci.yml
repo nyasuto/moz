@@ -1,0 +1,268 @@
+name: 🚀 Moz KVストア CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  quality-checks:
+    name: 🔍 品質チェック
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 🐚 Bash環境設定
+        run: |
+          echo "SHELL=/bin/bash" >> $GITHUB_ENV
+          bash --version
+          
+      - name: 📦 開発ツールインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          # shfmtインストール
+          GO_VERSION="1.21.0"
+          wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+          sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+          export PATH="/usr/local/go/bin:$PATH"
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+          echo "/home/runner/go/bin" >> $GITHUB_PATH
+          
+      - name: 🔧 依存関係セットアップ
+        run: make install
+        
+      - name: 🔍 リンティング
+        run: make lint
+        
+      - name: ✨ フォーマットチェック
+        run: |
+          make format
+          if ! git diff --exit-code; then
+            echo "❌ コードフォーマットが適用されていません"
+            echo "💡 ローカルで 'make format' を実行してください"
+            exit 1
+          fi
+          
+      - name: 🔍 構文チェック
+        run: make type-check
+        
+      - name: 🎯 統合品質チェック
+        run: make quality
+
+  performance-tests:
+    name: 📊 性能テスト
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 📦 jqインストール
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+        
+      - name: 🔧 依存関係セットアップ
+        run: make install
+        
+      - name: 🧪 小規模性能テスト (100件)
+        run: ./legacy/test_performance.sh 100
+        
+      - name: 📊 性能分析
+        run: ./legacy/analyze_performance.sh
+        
+      - name: 🗂️ 性能結果アップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: benchmark_results/
+          retention-days: 30
+
+  integration-tests:
+    name: 🔄 統合テスト
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 🔧 依存関係セットアップ
+        run: make install
+        
+      - name: 🧪 基本機能テスト
+        run: |
+          echo "🔧 基本的なKVストア操作テスト"
+          cd legacy
+          
+          # データクリア
+          rm -f ../moz.log
+          
+          # 基本操作テスト
+          ./put.sh name Alice
+          ./put.sh city Tokyo
+          ./put.sh name Bob  # 更新
+          
+          # 取得テスト
+          result=$(./get.sh name)
+          if [ "$result" != "Bob" ]; then
+            echo "❌ GET テスト失敗: 期待値Bob, 実際値$result"
+            exit 1
+          fi
+          
+          # 一覧テスト
+          count=$(./list.sh | wc -l)
+          if [ "$count" -ne 2 ]; then
+            echo "❌ LIST テスト失敗: 期待値2行, 実際値${count}行"
+            exit 1
+          fi
+          
+          # 削除テスト
+          ./del.sh name
+          if ./get.sh name 2>/dev/null; then
+            echo "❌ DELETE テスト失敗: 削除されたキーが取得できました"
+            exit 1
+          fi
+          
+          # コンパクションテスト
+          ./compact.sh
+          final_count=$(./list.sh | wc -l)
+          if [ "$final_count" -ne 1 ]; then
+            echo "❌ COMPACT テスト失敗: 期待値1行, 実際値${final_count}行"
+            exit 1
+          fi
+          
+          echo "✅ 全ての統合テストが成功しました"
+
+  makefile-targets:
+    name: 🔨 Makefileターゲットテスト
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 📦 開発ツールインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq bc
+          
+      - name: 🔧 make help
+        run: make help
+        
+      - name: 🚀 make dev
+        run: make dev
+        
+      - name: 🧹 make clean
+        run: make clean
+        
+      - name: ℹ️ make env-info
+        run: make env-info
+        
+      - name: 📋 make pr-ready
+        run: make pr-ready
+
+  security-scan:
+    name: 🔒 セキュリティスキャン
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 🔍 シークレットスキャン
+        run: |
+          echo "🔍 ハードコードされたシークレットをチェック中..."
+          if grep -r -i -E "(password|secret|token|key|api)" --include="*.sh" --include="*.md" --exclude-dir=".git" . | grep -v "# " | grep -v "echo"; then
+            echo "⚠️ 潜在的なシークレットが検出されました（上記参照）"
+            echo "🔍 内容を確認し、実際のシークレットでないことを確認してください"
+          else
+            echo "✅ ハードコードされたシークレットは検出されませんでした"
+          fi
+          
+      - name: 🛡️ ファイル権限チェック
+        run: |
+          echo "🛡️ 実行可能ファイルの権限をチェック中..."
+          find . -name "*.sh" -type f | while read -r file; do
+            if [ -x "$file" ]; then
+              echo "✅ $file (実行可能)"
+            else
+              echo "⚠️ $file (実行権限なし)"
+            fi
+          done
+
+  branch-protection-test:
+    name: 🌿 ブランチ保護テスト
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: 📥 チェックアウト
+        uses: actions/checkout@v4
+        
+      - name: 🔍 ブランチ名チェック
+        run: |
+          branch_name="${{ github.head_ref }}"
+          echo "チェック対象ブランチ: $branch_name"
+          
+          if ! echo "$branch_name" | grep -E "^(feat|fix|hotfix|test|docs|cicd|refactor)/.*"; then
+            echo "❌ ブランチ名がCLAUDE.mdの命名規則に従っていません"
+            echo "📋 推奨形式:"
+            echo "   feat/issue-X-feature-name"
+            echo "   fix/issue-X-description"
+            echo "   refactor/X-description"
+            exit 1
+          fi
+          
+          echo "✅ ブランチ名が命名規則に従っています"
+          
+      - name: 📝 コミットメッセージチェック
+        run: |
+          echo "📝 最新コミットメッセージをチェック中..."
+          commit_message=$(git log -1 --pretty=format:"%s")
+          echo "コミットメッセージ: $commit_message"
+          
+          if ! echo "$commit_message" | grep -E "^(feat|fix|docs|style|refactor|test|chore|ci):"; then
+            echo "⚠️ コミットメッセージがConventional Commits形式に従っていません"
+            echo "📋 推奨形式: type: description"
+            echo "例: feat: 新機能を追加"
+          else
+            echo "✅ コミットメッセージが規約に従っています"
+          fi
+
+  results-summary:
+    name: 📊 CI結果サマリー
+    runs-on: ubuntu-latest
+    needs: [quality-checks, performance-tests, integration-tests, makefile-targets, security-scan]
+    if: always()
+    
+    steps:
+      - name: 📊 結果サマリー
+        run: |
+          echo "## 🚀 Moz KVストア CI/CD 結果サマリー"
+          echo ""
+          echo "| チェック項目 | 結果 |"
+          echo "|-------------|------|"
+          echo "| 🔍 品質チェック | ${{ needs.quality-checks.result == 'success' && '✅ 成功' || '❌ 失敗' }} |"
+          echo "| 📊 性能テスト | ${{ needs.performance-tests.result == 'success' && '✅ 成功' || '❌ 失敗' }} |"
+          echo "| 🔄 統合テスト | ${{ needs.integration-tests.result == 'success' && '✅ 成功' || '❌ 失敗' }} |"
+          echo "| 🔨 Makefileテスト | ${{ needs.makefile-targets.result == 'success' && '✅ 成功' || '❌ 失敗' }} |"
+          echo "| 🔒 セキュリティスキャン | ${{ needs.security-scan.result == 'success' && '✅ 成功' || '❌ 失敗' }} |"
+          echo ""
+          
+          if [[ "${{ needs.quality-checks.result }}" == "success" && 
+                "${{ needs.performance-tests.result }}" == "success" && 
+                "${{ needs.integration-tests.result }}" == "success" && 
+                "${{ needs.makefile-targets.result }}" == "success" && 
+                "${{ needs.security-scan.result }}" == "success" ]]; then
+            echo "🎉 全てのチェックが成功しました！"
+            exit 0
+          else
+            echo "❌ 一部のチェックが失敗しました。詳細は上記のジョブを確認してください。"
+            exit 1
+          fi
