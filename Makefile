@@ -100,9 +100,49 @@ pr-ready: quality test
 git-hooks:
 	@echo "🔗 Gitフック設定中..."
 	@mkdir -p .git/hooks
-	@echo '#!/bin/bash\nmake quality' > .git/hooks/pre-commit
+	@echo '#!/bin/bash' > .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Branch protection rules from CLAUDE.md' >> .git/hooks/pre-commit
+	@echo 'current_branch=$$(git rev-parse --abbrev-ref HEAD)' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# NEVER commit directly to main branch' >> .git/hooks/pre-commit
+	@echo 'if [ "$$current_branch" = "main" ]; then' >> .git/hooks/pre-commit
+	@echo '    echo "❌ 直接mainブランチにコミットすることは禁止されています"' >> .git/hooks/pre-commit
+	@echo '    echo "💡 フィーチャーブランチを作成してください:"' >> .git/hooks/pre-commit
+	@echo '    echo "   git checkout -b feat/issue-X-feature-name"' >> .git/hooks/pre-commit
+	@echo '    exit 1' >> .git/hooks/pre-commit
+	@echo 'fi' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Check branch naming convention' >> .git/hooks/pre-commit
+	@echo 'if ! echo "$$current_branch" | grep -E "^(feat|fix|hotfix|test|docs|cicd|refactor)/.*" > /dev/null; then' >> .git/hooks/pre-commit
+	@echo '    echo "⚠️  ブランチ名がCLAUDE.mdの命名規則に従っていません"' >> .git/hooks/pre-commit
+	@echo '    echo "📋 推奨形式:"' >> .git/hooks/pre-commit
+	@echo '    echo "   feat/issue-X-feature-name"' >> .git/hooks/pre-commit
+	@echo '    echo "   fix/issue-X-description"' >> .git/hooks/pre-commit
+	@echo '    echo "   refactor/X-description"' >> .git/hooks/pre-commit
+	@echo '    echo "継続しますか？ [y/N]"' >> .git/hooks/pre-commit
+	@echo '    read -r response' >> .git/hooks/pre-commit
+	@echo '    if [ "$$response" != "y" ] && [ "$$response" != "Y" ]; then' >> .git/hooks/pre-commit
+	@echo '        exit 1' >> .git/hooks/pre-commit
+	@echo '    fi' >> .git/hooks/pre-commit
+	@echo 'fi' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Run quality checks before commit' >> .git/hooks/pre-commit
+	@echo 'echo "🔍 品質チェック実行中..."' >> .git/hooks/pre-commit
+	@echo 'make quality' >> .git/hooks/pre-commit
+	@echo 'if [ $$? -ne 0 ]; then' >> .git/hooks/pre-commit
+	@echo '    echo "❌ 品質チェックに失敗しました"' >> .git/hooks/pre-commit
+	@echo '    echo "💡 修正してから再度コミットしてください"' >> .git/hooks/pre-commit
+	@echo '    exit 1' >> .git/hooks/pre-commit
+	@echo 'fi' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo 'echo "✅ 品質チェック完了"' >> .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "✅ pre-commitフック設定完了"
+	@echo "📋 設定されたルール:"
+	@echo "  - mainブランチへの直接コミット禁止"
+	@echo "  - ブランチ命名規則チェック"
+	@echo "  - 品質チェック自動実行"
 
 # ビルド
 build:
