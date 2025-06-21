@@ -12,7 +12,7 @@ echo "📊 Moz KVストア 性能分析レポート"
 echo "=================================="
 echo ""
 
-latest_result=$(ls -t "$RESULTS_DIR"/performance_*.json 2>/dev/null | head -1)
+latest_result=$(find "$RESULTS_DIR" -name "performance_*.json" -type f -exec ls -t {} + 2>/dev/null | head -1)
 
 if [ -z "$latest_result" ]; then
     echo "❌ 性能テスト結果が見つかりません"
@@ -45,7 +45,7 @@ if command -v jq >/dev/null 2>&1; then
     
     # 全結果の比較
     echo "📈 性能履歴比較:"
-    for result_file in $(ls -t "$RESULTS_DIR"/performance_*.json); do
+    find "$RESULTS_DIR" -name "performance_*.json" -type f -print0 | sort -z | while IFS= read -r -d '' result_file; do
         timestamp=$(jq -r '.test_run.timestamp' "$result_file" | cut -d'T' -f1)
         put_ops=$(jq -r '.test_run.results[] | select(.operation == "put") | .ops_per_sec' "$result_file")
         get_ops=$(jq -r '.test_run.results[] | select(.operation == "get") | .ops_per_sec' "$result_file")
@@ -74,7 +74,7 @@ else
     echo "💡 インストール: brew install jq"
     echo ""
     echo "📊 基本情報:"
-    echo "  結果ファイル数: $(ls "$RESULTS_DIR"/performance_*.json | wc -l)"
+    echo "  結果ファイル数: $(find "$RESULTS_DIR" -name "performance_*.json" -type f | wc -l)"
     echo "  最新テスト: $(basename "$latest_result")"
 fi
 

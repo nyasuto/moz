@@ -21,7 +21,8 @@ log_result() {
     local operation="$1"
     local duration="$2"
     local count="$3"
-    local ops_per_sec=$(echo "scale=2; $count / $duration" | bc -l 2>/dev/null || echo "0")
+    local ops_per_sec
+    ops_per_sec=$(echo "scale=2; $count / $duration" | bc -l 2>/dev/null || echo "0")
     
     echo "  ⏱️  実行時間: ${duration}s"
     echo "  📈 処理速度: ${ops_per_sec} ops/sec"
@@ -38,16 +39,18 @@ EOF
 }
 
 measure_time() {
-    local start_time=$(date +%s.%N)
+    local start_time
+    local end_time
+    start_time=$(date +%s.%N)
     "$@"
-    local end_time=$(date +%s.%N)
-    echo $(echo "$end_time - $start_time" | bc -l)
+    end_time=$(date +%s.%N)
+    echo "$end_time - $start_time" | bc -l
 }
 
 generate_test_data() {
     echo "📝 テストデータ生成中..."
     local count=$1
-    for i in $(seq 1 $count); do
+    for i in $(seq 1 "$count"); do
         echo -e "key_${i}\tvalue_data_${i}_$(date +%s%N | tail -c 10)"
     done
 }
@@ -56,7 +59,8 @@ test_put_operations() {
     echo "🔧 PUT 操作テスト (${TEST_DATA_SIZE}件)"
     rm -f moz.log
     
-    local duration=$(measure_time bash -c "
+    local duration
+    duration=$(measure_time bash -c "
         for i in \$(seq 1 $TEST_DATA_SIZE); do
             ./put.sh \"test_key_\$i\" \"test_value_\$i\"
         done
@@ -68,7 +72,8 @@ test_put_operations() {
 test_get_operations() {
     echo "🔍 GET 操作テスト (${TEST_DATA_SIZE}件)"
     
-    local duration=$(measure_time bash -c "
+    local duration
+    duration=$(measure_time bash -c "
         for i in \$(seq 1 $TEST_DATA_SIZE); do
             ./get.sh \"test_key_\$i\" > /dev/null
         done
@@ -80,7 +85,8 @@ test_get_operations() {
 test_list_operation() {
     echo "📋 LIST 操作テスト"
     
-    local duration=$(measure_time ./list.sh > /dev/null)
+    local duration
+    duration=$(measure_time ./list.sh > /dev/null)
     duration=${duration:-0.001}
     
     log_result "list" "$duration" "1"
@@ -89,7 +95,8 @@ test_list_operation() {
 test_filter_operation() {
     echo "🔎 FILTER 操作テスト"
     
-    local duration=$(measure_time ./filter.sh "test_key_1" > /dev/null)
+    local duration
+    duration=$(measure_time ./filter.sh "test_key_1" > /dev/null)
     duration=${duration:-0.001}
     
     log_result "filter" "$duration" "1"
@@ -98,7 +105,8 @@ test_filter_operation() {
 test_compact_operation() {
     echo "🗜️ COMPACT 操作テスト"
     
-    local duration=$(measure_time ./compact.sh)
+    local duration
+    duration=$(measure_time ./compact.sh)
     
     log_result "compact" "$duration" "1"
 }
@@ -108,8 +116,9 @@ test_mixed_workload() {
     rm -f moz.log
     
     local half_size=$((TEST_DATA_SIZE / 2))
+    local duration
     
-    local duration=$(measure_time bash -c "
+    duration=$(measure_time bash -c "
         # PUT操作
         for i in \$(seq 1 $half_size); do
             ./put.sh \"mixed_key_\$i\" \"mixed_value_\$i\"
@@ -140,8 +149,10 @@ test_mixed_workload() {
 
 analyze_file_size() {
     if [ -f "moz.log" ]; then
-        local file_size=$(wc -c < moz.log)
-        local line_count=$(wc -l < moz.log)
+        local file_size
+        local line_count
+        file_size=$(wc -c < moz.log)
+        line_count=$(wc -l < moz.log)
         echo "📊 ファイルサイズ分析:"
         echo "  💾 ファイルサイズ: ${file_size} bytes"
         echo "  📄 行数: ${line_count} lines"
