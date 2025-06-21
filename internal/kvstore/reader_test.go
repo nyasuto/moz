@@ -13,7 +13,7 @@ func TestLogReader_ReadAll_TABFormat(t *testing.T) {
 	// Create temporary test file with TAB-delimited format
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.log")
-	
+
 	content := "name\tAlice\ncity\tTokyo\nname\tBob\nage\t25\ncity\t__DELETED__\n"
 	err := os.WriteFile(testFile, []byte(content), 0644)
 	if err != nil {
@@ -27,7 +27,7 @@ func TestLogReader_ReadAll_TABFormat(t *testing.T) {
 	}
 
 	expected := map[string]string{
-		"name": "Bob",  // Latest value
+		"name": "Bob", // Latest value
 		"age":  "25",
 		// city should be deleted due to __DELETED__ marker
 	}
@@ -41,7 +41,7 @@ func TestLogReader_ReadAll_SpaceFormat(t *testing.T) {
 	// Create temporary test file with space-delimited format
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.log")
-	
+
 	content := "PUT name Alice\nPUT city Tokyo\nPUT name Bob\nPUT age 25\nDEL city\n"
 	err := os.WriteFile(testFile, []byte(content), 0644)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestLogReader_ReadAll_SpaceFormat(t *testing.T) {
 	}
 
 	expected := map[string]string{
-		"name": "Bob",  // Latest value
+		"name": "Bob", // Latest value
 		"age":  "25",
 		// city should be deleted due to DEL operation
 	}
@@ -69,7 +69,7 @@ func TestLogReader_ReadAll_MixedFormat(t *testing.T) {
 	// Test mixed TAB and space formats
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.log")
-	
+
 	content := "name\tAlice\nPUT city Tokyo\nname\tBob\nDEL city\nage\t25\n"
 	err := os.WriteFile(testFile, []byte(content), 0644)
 	if err != nil {
@@ -96,7 +96,7 @@ func TestLogReader_ReadAll_MixedFormat(t *testing.T) {
 func TestLogReader_ReadAll_EmptyFile(t *testing.T) {
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "empty.log")
-	
+
 	// Create empty file
 	err := os.WriteFile(testFile, []byte(""), 0644)
 	if err != nil {
@@ -129,7 +129,7 @@ func TestLogReader_ReadAll_NonExistentFile(t *testing.T) {
 func TestLogReader_ReadAllEntries(t *testing.T) {
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.log")
-	
+
 	content := "name\tAlice\ncity\tTokyo\nname\tBob\n"
 	err := os.WriteFile(testFile, []byte(content), 0644)
 	if err != nil {
@@ -155,7 +155,7 @@ func TestLogReader_ReadAllEntries(t *testing.T) {
 
 func TestLogReader_parseLine_TABFormat(t *testing.T) {
 	reader := NewLogReader("")
-	
+
 	tests := []struct {
 		line     string
 		expected LogEntry
@@ -171,7 +171,7 @@ func TestLogReader_parseLine_TABFormat(t *testing.T) {
 
 	for _, test := range tests {
 		entry, err := reader.parseLine(test.line)
-		
+
 		if test.hasError {
 			if err == nil {
 				t.Errorf("Expected error for line: %s", test.line)
@@ -189,7 +189,7 @@ func TestLogReader_parseLine_TABFormat(t *testing.T) {
 
 func TestLogReader_parseLine_SpaceFormat(t *testing.T) {
 	reader := NewLogReader("")
-	
+
 	tests := []struct {
 		line     string
 		expected LogEntry
@@ -198,15 +198,15 @@ func TestLogReader_parseLine_SpaceFormat(t *testing.T) {
 		{"PUT name Alice", LogEntry{Key: "name", Value: "Alice"}, false},
 		{"DEL city", LogEntry{Key: "city", Value: "__DELETED__"}, false},
 		{"PUT key value with spaces", LogEntry{Key: "key", Value: "value with spaces"}, false},
-		{"PUT key", LogEntry{}, true},      // Missing value
-		{"DEL", LogEntry{}, true},          // Missing key
+		{"PUT key", LogEntry{}, true},           // Missing value
+		{"DEL", LogEntry{}, true},               // Missing key
 		{"INVALID key value", LogEntry{}, true}, // Invalid operation
-		{"", LogEntry{}, true},             // Empty line
+		{"", LogEntry{}, true},                  // Empty line
 	}
 
 	for _, test := range tests {
 		entry, err := reader.parseLine(test.line)
-		
+
 		if test.hasError {
 			if err == nil {
 				t.Errorf("Expected error for line: %s", test.line)
@@ -238,7 +238,7 @@ func TestValidateKey(t *testing.T) {
 
 	for _, test := range tests {
 		err := ValidateKey(test.key)
-		
+
 		if test.hasError {
 			if err == nil {
 				t.Errorf("Expected error for key: %s", test.key)
@@ -275,7 +275,7 @@ func TestLogReader_LargeFile(t *testing.T) {
 	// Test with a reasonably large file to ensure streaming works
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "large.log")
-	
+
 	var content strings.Builder
 	for i := 0; i < 1000; i++ {
 		content.WriteString("key")
@@ -289,7 +289,7 @@ func TestLogReader_LargeFile(t *testing.T) {
 		content.WriteString(strconv.Itoa(i))
 		content.WriteString("\n")
 	}
-	
+
 	err := os.WriteFile(testFile, []byte(content.String()), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
@@ -304,7 +304,7 @@ func TestLogReader_LargeFile(t *testing.T) {
 	if len(data) != 1000 {
 		t.Errorf("Expected 1000 entries, got %d", len(data))
 	}
-	
+
 	// Verify a few sample entries
 	if data["key000"] != "value0" {
 		t.Errorf("Expected key000=value0, got %s", data["key000"])

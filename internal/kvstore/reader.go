@@ -55,7 +55,7 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 
 	var entries []LogEntry
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -67,7 +67,7 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 			// Skip invalid lines instead of failing
 			continue
 		}
-		
+
 		entries = append(entries, entry)
 	}
 
