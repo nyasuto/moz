@@ -1,12 +1,10 @@
 package kvstore
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 )
 
@@ -38,6 +36,11 @@ func New() *KVStore {
 }
 
 func (kv *KVStore) Put(key, value string) error {
+	// Validate key format (legacy compatibility)
+	if err := ValidateKey(key); err != nil {
+		return err
+	}
+
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
@@ -47,7 +50,8 @@ func (kv *KVStore) Put(key, value string) error {
 	}
 	defer file.Close()
 
-	logEntry := fmt.Sprintf("PUT %s %s\n", key, value)
+	// Use TAB-delimited format for legacy compatibility
+	logEntry := fmt.Sprintf("%s\t%s\n", key, value)
 	if _, err := file.WriteString(logEntry); err != nil {
 		return fmt.Errorf("failed to write to log: %w", err)
 	}
@@ -73,6 +77,11 @@ func (kv *KVStore) Get(key string) (string, error) {
 }
 
 func (kv *KVStore) Delete(key string) error {
+	// Validate key format (legacy compatibility)
+	if err := ValidateKey(key); err != nil {
+		return err
+	}
+
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
@@ -91,7 +100,8 @@ func (kv *KVStore) Delete(key string) error {
 	}
 	defer file.Close()
 
-	logEntry := fmt.Sprintf("DEL %s\n", key)
+	// Use TAB-delimited format with __DELETED__ marker for legacy compatibility
+	logEntry := fmt.Sprintf("%s\t__DELETED__\n", key)
 	if _, err := file.WriteString(logEntry); err != nil {
 		return fmt.Errorf("failed to write to log: %w", err)
 	}
@@ -140,7 +150,8 @@ func (kv *KVStore) Compact() error {
 	sort.Strings(keys)
 
 	for _, key := range keys {
-		logEntry := fmt.Sprintf("PUT %s %s\n", key, data[key])
+		// Use TAB-delimited format for legacy compatibility
+		logEntry := fmt.Sprintf("%s\t%s\n", key, data[key])
 		if _, err := file.WriteString(logEntry); err != nil {
 			os.Remove(tempFile)
 			return fmt.Errorf("failed to write to temp file: %w", err)
@@ -156,45 +167,7 @@ func (kv *KVStore) Compact() error {
 }
 
 func (kv *KVStore) buildCurrentState() (map[string]string, error) {
-	data := make(map[string]string)
-
-	file, err := os.Open(kv.logFile)
-	if os.IsNotExist(err) {
-		return data, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to open log file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		parts := strings.SplitN(line, " ", 3)
-		if len(parts) < 2 {
-			continue
-		}
-
-		operation := parts[0]
-		key := parts[1]
-
-		switch operation {
-		case "PUT":
-			if len(parts) == 3 {
-				data[key] = parts[2]
-			}
-		case "DEL":
-			delete(data, key)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading log file: %w", err)
-	}
-
-	return data, nil
+	// Use the new LogReader for better format compatibility
+	reader := NewLogReader(kv.logFile)
+	return reader.ReadAll()
 }
