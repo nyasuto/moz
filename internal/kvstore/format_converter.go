@@ -98,6 +98,11 @@ func (fc *FormatConverter) TextToBinary() error {
 		return fmt.Errorf("error reading text file: %w", err)
 	}
 
+	// Ensure all data is written to disk before returning
+	if err := binaryF.Sync(); err != nil {
+		return fmt.Errorf("failed to sync binary file: %w", err)
+	}
+
 	fmt.Printf("Successfully converted %d entries from text to binary format\n", entryCount)
 	return nil
 }
@@ -123,7 +128,7 @@ func (fc *FormatConverter) BinaryToText() error {
 	for {
 		entry, err := ReadBinaryEntry(binaryF)
 		if err != nil {
-			if err == io.EOF {
+			if err == io.EOF || err.Error() == "failed to read magic number: EOF" {
 				break
 			}
 			return fmt.Errorf("failed to read binary entry: %w", err)
@@ -142,6 +147,11 @@ func (fc *FormatConverter) BinaryToText() error {
 		}
 
 		entryCount++
+	}
+
+	// Ensure all data is written to disk before returning
+	if err := textF.Sync(); err != nil {
+		return fmt.Errorf("failed to sync text file: %w", err)
 	}
 
 	fmt.Printf("Successfully converted %d entries from binary to text format\n", entryCount)
@@ -180,7 +190,7 @@ func ValidateBinaryFile(filename string) error {
 	for {
 		entry, err := ReadBinaryEntry(file)
 		if err != nil {
-			if err == io.EOF {
+			if err == io.EOF || err.Error() == "failed to read magic number: EOF" {
 				break
 			}
 			return fmt.Errorf("validation failed at entry %d: %w", entryCount+1, err)
@@ -223,7 +233,7 @@ func GetBinaryFileStats(filename string) (*BinaryFileStats, error) {
 	for {
 		entry, err := ReadBinaryEntry(file)
 		if err != nil {
-			if err == io.EOF {
+			if err == io.EOF || err.Error() == "failed to read magic number: EOF" {
 				break
 			}
 			return nil, fmt.Errorf("failed to read entry: %w", err)
