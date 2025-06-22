@@ -36,7 +36,12 @@ func (lr *LogReader) ReadAll() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open log file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override main error
+			fmt.Printf("Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	return lr.parseLogFile(file)
 }
@@ -51,7 +56,12 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open log file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override main error
+			fmt.Printf("Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	var entries []LogEntry
 	scanner := bufio.NewScanner(file)

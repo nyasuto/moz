@@ -53,7 +53,12 @@ func (kv *KVStore) Put(key, value string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override main error
+			fmt.Printf("Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	// Use TAB-delimited format for legacy compatibility
 	logEntry := fmt.Sprintf("%s\t%s\n", key, value)
@@ -108,7 +113,12 @@ func (kv *KVStore) Delete(key string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override main error
+			fmt.Printf("Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	// Use TAB-delimited format with __DELETED__ marker for legacy compatibility
 	logEntry := fmt.Sprintf("%s\t__DELETED__\n", key)
@@ -156,7 +166,12 @@ func (kv *KVStore) Compact() error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override main error
+			fmt.Printf("Warning: failed to close temp file: %v\n", closeErr)
+		}
+	}()
 
 	keys := make([]string, 0, len(data))
 	for key := range data {

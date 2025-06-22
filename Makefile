@@ -238,6 +238,7 @@ go-lint:
 			echo "❌ golangci-lint で問題が検出されました"; \
 			echo "🔍 詳細確認のため go vet も実行します..."; \
 			go vet ./...; \
+			exit 1; \
 		fi; \
 	elif [ -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
 		if $$(go env GOPATH)/bin/golangci-lint run ./...; then \
@@ -246,6 +247,7 @@ go-lint:
 			echo "❌ golangci-lint で問題が検出されました"; \
 			echo "🔍 詳細確認のため go vet も実行します..."; \
 			go vet ./...; \
+			exit 1; \
 		fi; \
 	else \
 		echo "⚠️  golangci-lint がインストールされていません - go vetで代用"; \
@@ -300,13 +302,17 @@ go-security:
 		if gosec ./...; then \
 			echo "✅ gosec セキュリティスキャン完了 - 問題なし"; \
 		else \
-			echo "⚠️  gosec で潜在的なセキュリティ問題が検出されました"; \
+			echo "❌ gosec で重要なセキュリティ問題が検出されました"; \
+			echo "🔍 修正が必要です"; \
+			exit 1; \
 		fi; \
 	elif [ -f "$$(go env GOPATH)/bin/gosec" ]; then \
 		if $$(go env GOPATH)/bin/gosec ./...; then \
 			echo "✅ gosec セキュリティスキャン完了 - 問題なし"; \
 		else \
-			echo "⚠️  gosec で潜在的なセキュリティ問題が検出されました"; \
+			echo "❌ gosec で重要なセキュリティ問題が検出されました"; \
+			echo "🔍 修正が必要です"; \
+			exit 1; \
 		fi; \
 	else \
 		echo "⚠️  gosecがインストールされていません - go vetで基本チェックを実行"; \
