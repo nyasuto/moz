@@ -12,6 +12,7 @@ import (
 
 func main() {
 	var format = flag.String("format", "text", "Storage format: text or binary")
+	var indexType = flag.String("index", "none", "Index type: hash, btree, or none")
 	flag.Parse()
 
 	args := flag.Args()
@@ -22,11 +23,13 @@ func main() {
 
 	command := args[0]
 
-	// Create store with specified format
+	// Create store with specified format and index
 	storageConfig := kvstore.StorageConfig{
 		Format:     *format,
 		TextFile:   "moz.log",
 		BinaryFile: "moz.bin",
+		IndexType:  *indexType,
+		IndexFile:  "moz.idx",
 	}
 
 	compactionConfig := kvstore.CompactionConfig{
@@ -102,8 +105,15 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error getting compaction stats: %v", err)
 		}
+
+		indexStats, err := store.GetIndexStats()
+		if err != nil {
+			log.Fatalf("Error getting index stats: %v", err)
+		}
+
 		fmt.Printf("📊 Storage Statistics:\n")
 		fmt.Printf("  Format: %s\n", storageConfig.Format)
+		fmt.Printf("  Index: %s\n", storageConfig.IndexType)
 		fmt.Printf("  Auto-compaction: %v\n", stats.Enabled)
 		fmt.Printf("  Operations since last compaction: %d\n", stats.OperationCount)
 		fmt.Printf("  File size: %d bytes\n", stats.FileSize)
@@ -114,6 +124,12 @@ func main() {
 		} else {
 			fmt.Printf("  Last compaction: Never\n")
 		}
+
+		fmt.Printf("\n🔍 Index Statistics:\n")
+		fmt.Printf("  Index enabled: %v\n", indexStats["enabled"])
+		fmt.Printf("  Index type: %s\n", indexStats["type"])
+		fmt.Printf("  Index size: %d entries\n", indexStats["size"])
+		fmt.Printf("  Index memory usage: %d bytes\n", indexStats["memory_usage"])
 
 	case "convert":
 		if len(args) != 3 {
@@ -165,6 +181,80 @@ func main() {
 			fmt.Printf("Unknown format: %s\n", fileFormat)
 			os.Exit(1)
 		}
+
+	case "range":
+		if len(args) != 3 {
+			fmt.Println("Usage: moz range <start_key> <end_key>")
+			os.Exit(1)
+		}
+		startKey, endKey := args[1], args[2]
+
+		results, err := store.GetRange(startKey, endKey)
+		if err != nil {
+			log.Fatalf("Error performing range query: %v", err)
+		}
+
+		if len(results) == 0 {
+			fmt.Printf("No keys found in range [%s, %s]\n", startKey, endKey)
+		} else {
+			fmt.Printf("🔍 Range query [%s, %s] (%d results):\n", startKey, endKey, len(results))
+			for key, value := range results {
+				fmt.Printf("  %s: %s\n", key, value)
+			}
+		}
+
+	case "prefix":
+		if len(args) != 2 {
+			fmt.Println("Usage: moz prefix <prefix>")
+			os.Exit(1)
+		}
+		prefix := args[1]
+
+		results, err := store.PrefixSearch(prefix)
+		if err != nil {
+			log.Fatalf("Error performing prefix search: %v", err)
+		}
+
+		if len(results) == 0 {
+			fmt.Printf("No keys found with prefix '%s'\n", prefix)
+		} else {
+			fmt.Printf("🔍 Prefix search '%s' (%d results):\n", prefix, len(results))
+			for key, value := range results {
+				fmt.Printf("  %s: %s\n", key, value)
+			}
+		}
+
+	case "sorted":
+		keys, err := store.ListSorted()
+		if err != nil {
+			log.Fatalf("Error getting sorted keys: %v", err)
+		}
+
+		if len(keys) == 0 {
+			fmt.Println("No keys found")
+		} else {
+			fmt.Printf("📋 Sorted keys (%d total):\n", len(keys))
+			for _, key := range keys {
+				value, err := store.Get(key)
+				if err != nil {
+					fmt.Printf("  %s: <error: %v>\n", key, err)
+				} else {
+					fmt.Printf("  %s: %s\n", key, value)
+				}
+			}
+		}
+
+	case "rebuild-index":
+		if err := store.RebuildIndex(); err != nil {
+			log.Fatalf("Error rebuilding index: %v", err)
+		}
+		fmt.Println("✅ Index rebuilt successfully")
+
+	case "validate-index":
+		if err := store.ValidateIndex(); err != nil {
+			log.Fatalf("Index validation failed: %v", err)
+		}
+		fmt.Println("✅ Index validation passed")
 
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
