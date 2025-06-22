@@ -14,9 +14,12 @@ const (
 )
 
 type KVStore struct {
-	dataDir string
-	logFile string
-	mu      sync.RWMutex
+	dataDir   string
+	logFile   string
+	mu        sync.RWMutex
+	memoryMap map[string]string
+	isLoaded  bool
+	mapMu     sync.RWMutex
 }
 
 func New() *KVStore {
@@ -30,8 +33,10 @@ func New() *KVStore {
 	}
 
 	return &KVStore{
-		dataDir: dataDir,
-		logFile: filepath.Join(dataDir, LogFileName),
+		dataDir:   dataDir,
+		logFile:   filepath.Join(dataDir, LogFileName),
+		memoryMap: make(map[string]string),
+		isLoaded:  false,
 	}
 }
 
@@ -54,6 +59,11 @@ func (kv *KVStore) Put(key, value string) error {
 	logEntry := fmt.Sprintf("%s\t%s\n", key, value)
 	if _, err := file.WriteString(logEntry); err != nil {
 		return fmt.Errorf("failed to write to log: %w", err)
+	}
+
+	// Update memory map after successful write
+	if err := kv.updateMemoryMap(key, value); err != nil {
+		return fmt.Errorf("failed to update memory map: %w", err)
 	}
 
 	return nil
@@ -104,6 +114,11 @@ func (kv *KVStore) Delete(key string) error {
 	logEntry := fmt.Sprintf("%s\t__DELETED__\n", key)
 	if _, err := file.WriteString(logEntry); err != nil {
 		return fmt.Errorf("failed to write to log: %w", err)
+	}
+
+	// Update memory map after successful write
+	if err := kv.updateMemoryMap(key, "__DELETED__"); err != nil {
+		return fmt.Errorf("failed to update memory map: %w", err)
 	}
 
 	return nil
@@ -163,11 +178,89 @@ func (kv *KVStore) Compact() error {
 		return fmt.Errorf("failed to replace log file: %w", err)
 	}
 
+	// Reload memory map after compaction
+	kv.mapMu.Lock()
+	kv.isLoaded = false
+	kv.mapMu.Unlock()
+
 	return nil
 }
 
-func (kv *KVStore) buildCurrentState() (map[string]string, error) {
-	// Use the new LogReader for better format compatibility
+// loadMemoryMap loads the current state from disk into memory
+func (kv *KVStore) loadMemoryMap() error {
+	kv.mapMu.Lock()
+	defer kv.mapMu.Unlock()
+
+	if kv.isLoaded {
+		return nil
+	}
+
 	reader := NewLogReader(kv.logFile)
-	return reader.ReadAll()
+	data, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	kv.memoryMap = data
+	kv.isLoaded = true
+	return nil
+}
+
+// getMemoryMap returns a copy of the current memory map
+func (kv *KVStore) getMemoryMap() (map[string]string, error) {
+	if err := kv.loadMemoryMap(); err != nil {
+		return nil, err
+	}
+
+	kv.mapMu.RLock()
+	defer kv.mapMu.RUnlock()
+
+	// Return a copy to prevent external modifications
+	result := make(map[string]string, len(kv.memoryMap))
+	for k, v := range kv.memoryMap {
+		result[k] = v
+	}
+	return result, nil
+}
+
+// updateMemoryMap updates the in-memory map with a key-value pair
+func (kv *KVStore) updateMemoryMap(key, value string) error {
+	if err := kv.loadMemoryMap(); err != nil {
+		return err
+	}
+
+	kv.mapMu.Lock()
+	defer kv.mapMu.Unlock()
+
+	if value == "__DELETED__" {
+		delete(kv.memoryMap, key)
+	} else {
+		kv.memoryMap[key] = value
+	}
+	return nil
+}
+
+// Stats returns statistics about the current memory map
+type Stats struct {
+	MemoryMapSize int  `json:"memory_map_size"`
+	IsLoaded      bool `json:"is_loaded"`
+}
+
+// GetStats returns current statistics about the KVStore
+func (kv *KVStore) GetStats() (Stats, error) {
+	if err := kv.loadMemoryMap(); err != nil {
+		return Stats{}, err
+	}
+
+	kv.mapMu.RLock()
+	defer kv.mapMu.RUnlock()
+
+	return Stats{
+		MemoryMapSize: len(kv.memoryMap),
+		IsLoaded:      kv.isLoaded,
+	}, nil
+}
+
+func (kv *KVStore) buildCurrentState() (map[string]string, error) {
+	return kv.getMemoryMap()
 }
