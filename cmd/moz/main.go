@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/nyasuto/moz/internal/kvstore"
 )
@@ -76,6 +77,23 @@ func main() {
 		}
 		fmt.Println("✅ Store compacted")
 
+	case "stats":
+		stats, err := store.GetCompactionStats()
+		if err != nil {
+			log.Fatalf("Error getting compaction stats: %v", err)
+		}
+		fmt.Printf("📊 Compaction Statistics:\n")
+		fmt.Printf("  Auto-compaction: %v\n", stats.Enabled)
+		fmt.Printf("  Operations since last compaction: %d\n", stats.OperationCount)
+		fmt.Printf("  File size: %d bytes\n", stats.FileSize)
+		fmt.Printf("  Deleted entries ratio: %.2f%%\n", stats.DeletedRatio*100)
+		fmt.Printf("  Operations until next compaction: %d\n", stats.NextCompactionAt)
+		if stats.LastCompaction > 0 {
+			fmt.Printf("  Last compaction: %v\n", time.Unix(stats.LastCompaction, 0).Format("2006-01-02 15:04:05"))
+		} else {
+			fmt.Printf("  Last compaction: Never\n")
+		}
+
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		printUsage()
@@ -94,4 +112,5 @@ func printUsage() {
 	fmt.Println("")
 	fmt.Println("管理操作:")
 	fmt.Println("  moz compact            - ストレージ最適化")
+	fmt.Println("  moz stats              - 自動コンパクション統計表示")
 }
