@@ -176,6 +176,11 @@ jobs:
           fi
           
           echo "✅ 全ての統合テストが成功しました"
+          
+      - name: 🔄 Shell-Go互換性テスト
+        run: |
+          echo "🔄 Shell-Go クロス互換性テスト実行中..."
+          scripts/compatibility_test.sh
 
   makefile-targets:
     name: 🔨 Makefileターゲットテスト
