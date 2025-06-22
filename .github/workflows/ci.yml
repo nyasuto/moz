@@ -25,14 +25,6 @@ jobs:
             go.sum
             go.mod
           
-      - name: 📦 システムパッケージキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
-            
       - name: 📦 システムパッケージインストール
         run: |
           sudo apt-get update
@@ -88,14 +80,6 @@ jobs:
             go.sum
             go.mod
           
-      - name: 📦 システムパッケージキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
-            
       - name: 📦 システムパッケージインストール
         run: |
           sudo apt-get update
@@ -222,14 +206,6 @@ jobs:
             go.sum
             go.mod
           
-      - name: 📦 システムパッケージキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
-            
       - name: 📦 システムパッケージインストール
         run: |
           sudo apt-get update
