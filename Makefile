@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check bench-go bench-shell bench-compare bench-all bench-quick
 
 # Default target
 help:
@@ -34,6 +34,12 @@ help:
 	@echo "  make go-test-cov - Goテストカバレッジ"
 	@echo "  make go-race    - レース条件検出テスト"
 	@echo "  make go-bench   - ベンチマークテスト"
+	@echo ""
+	@echo "📊 性能測定・比較:"
+	@echo "  make bench-go   - Go実装ベンチマーク実行"
+	@echo "  make bench-shell - シェル実装ベンチマーク実行" 
+	@echo "  make bench-compare - Go vs シェル性能比較"
+	@echo "  make bench-all  - 全ベンチマーク実行"
 	@echo ""
 	@echo "🛠️ Go開発ツール:"
 	@echo "  make go-install - バイナリをGOPATH/binにインストール"
@@ -333,3 +339,35 @@ go-dep-check:
 		echo "⚠️  govulncheck がインストールされていません"; \
 		echo "   make go-tools-install を実行してください"; \
 	fi
+# Performance benchmarking targets
+
+bench-go:
+	@echo "📊 Go実装ベンチマーク実行中..."
+	@mkdir -p benchmark_results
+	@go test -bench=BenchmarkGo -benchmem ./internal/kvstore/
+	@echo "✅ Goベンチマーク完了"
+
+bench-shell:
+	@echo "📊 シェル実装ベンチマーク実行中..."
+	@mkdir -p benchmark_results
+	@chmod +x scripts/shell_benchmark.sh
+	@scripts/shell_benchmark.sh 1000 all
+	@echo "✅ シェルベンチマーク完了"
+
+bench-compare:
+	@echo "📊 Go vs シェル性能比較実行中..."
+	@mkdir -p benchmark_results
+	@chmod +x scripts/performance_comparison.sh
+	@scripts/performance_comparison.sh 1000 both
+	@echo "✅ 性能比較完了"
+
+bench-all: bench-go bench-shell bench-compare
+	@echo "🎯 全ベンチマーク完了"
+	@echo "📁 結果はbenchmark_results/ディレクトリを確認してください"
+
+bench-quick:
+	@echo "⚡ クイック性能テスト実行中..."
+	@mkdir -p benchmark_results
+	@chmod +x scripts/performance_comparison.sh
+	@scripts/performance_comparison.sh 100 json
+	@echo "✅ クイック性能テスト完了"
