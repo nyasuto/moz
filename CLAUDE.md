@@ -129,7 +129,11 @@ Use descriptive, consistent branch names:
 - Hotfix: `hotfix/X-description`
 - Test: `test/X-description`
 - Docs: `docs/X-description`
-- CI/CD: `cicd/X-description`
+- CI/CD: `ci/X-description` or `cicd/X-description`
+- Refactor: `refactor/X-description`
+- Performance: `perf/X-description`
+- Security: `security/X-description`
+- Dependencies: `deps/X-description`
 
 ### Commit Message Format
 
