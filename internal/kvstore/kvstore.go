@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultDataDir = "/tmp/moz_data"
+	DefaultDataDir = "." // Current directory for shell compatibility
 	LogFileName    = "moz.log"
 
 	// Auto-compaction thresholds
@@ -58,8 +58,11 @@ func NewWithConfig(config CompactionConfig) *KVStore {
 		dataDir = envDir
 	}
 
-	if err := os.MkdirAll(dataDir, 0750); err != nil {
-		panic(fmt.Sprintf("Failed to create data directory: %v", err))
+	// Only create directory if it's not the current directory
+	if dataDir != "." {
+		if err := os.MkdirAll(dataDir, 0750); err != nil {
+			panic(fmt.Sprintf("Failed to create data directory: %v", err))
+		}
 	}
 
 	return &KVStore{
