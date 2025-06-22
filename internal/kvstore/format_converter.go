@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -14,6 +15,24 @@ type FormatConverter struct {
 	// Configuration
 	textFile   string
 	binaryFile string
+}
+
+// validateFilePath validates that the file path is safe to use
+func validateFilePath(filename string) error {
+	// Clean the path to prevent directory traversal
+	cleanPath := filepath.Clean(filename)
+
+	// Check for directory traversal attempts
+	if strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("invalid file path: contains directory traversal")
+	}
+
+	// Ensure the path is not absolute (for security)
+	if filepath.IsAbs(cleanPath) {
+		return fmt.Errorf("invalid file path: absolute paths not allowed")
+	}
+
+	return nil
 }
 
 // NewFormatConverter creates a new format converter
@@ -147,7 +166,11 @@ func BinaryEntryToText(entry *BinaryEntry) string {
 
 // ValidateBinaryFile checks if a binary file is valid
 func ValidateBinaryFile(filename string) error {
-	file, err := os.Open(filename)
+	if err := validateFilePath(filename); err != nil {
+		return fmt.Errorf("file path validation failed: %w", err)
+	}
+
+	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", filename, err)
 	}
@@ -177,7 +200,11 @@ func ValidateBinaryFile(filename string) error {
 
 // GetBinaryFileStats returns statistics about a binary file
 func GetBinaryFileStats(filename string) (*BinaryFileStats, error) {
-	file, err := os.Open(filename)
+	if err := validateFilePath(filename); err != nil {
+		return nil, fmt.Errorf("file path validation failed: %w", err)
+	}
+
+	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", filename, err)
 	}
