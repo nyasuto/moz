@@ -21,7 +21,9 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            go.mod
           
       - name: 📦 システムパッケージキャッシュ
         uses: actions/cache@v4
@@ -39,10 +41,13 @@ jobs:
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
         with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
           restore-keys: |
             ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
             
       - name: 🔧 依存関係セットアップ
         run: make install
@@ -79,7 +84,9 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            go.mod
           
       - name: 📦 システムパッケージキャッシュ
         uses: actions/cache@v4
@@ -97,10 +104,13 @@ jobs:
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
         with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
           restore-keys: |
             ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
             
       - name: 🔧 依存関係セットアップ
         run: make install
@@ -132,15 +142,20 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            go.mod
           
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
         with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
           restore-keys: |
             ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
             
       - name: 🔧 依存関係セットアップ
         run: make install
@@ -203,7 +218,9 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            go.mod
           
       - name: 📦 システムパッケージキャッシュ
         uses: actions/cache@v4
@@ -221,10 +238,13 @@ jobs:
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
         with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
           restore-keys: |
             ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
           
       - name: 🔧 make help
         run: make help
