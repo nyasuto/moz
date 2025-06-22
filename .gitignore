@@ -31,6 +31,10 @@ bin/
 *.out
 *.prof
 
+# テスト用バイナリファイル
+test*.bin
+test*.log
+
 # Go modules (コミットするため除外しない)
 # go.mod
 # go.sum

@@ -27,6 +27,13 @@ type CompactionConfig struct {
 	CompactionRatio float64 // Compact when deleted ratio exceeds this
 }
 
+// StorageConfig holds storage format settings
+type StorageConfig struct {
+	Format     string // "text" or "binary"
+	TextFile   string // Text format log file
+	BinaryFile string // Binary format log file
+}
+
 type KVStore struct {
 	dataDir   string
 	logFile   string
@@ -41,6 +48,9 @@ type KVStore struct {
 	lastCompaction   int64      // Unix timestamp
 	compactionMu     sync.Mutex // Prevents concurrent compactions
 	isCompacting     bool
+
+	// Storage format fields
+	storageConfig StorageConfig
 }
 
 func New() *KVStore {
@@ -49,10 +59,14 @@ func New() *KVStore {
 		MaxFileSize:     DefaultMaxFileSize,
 		MaxOperations:   DefaultMaxOperations,
 		CompactionRatio: DefaultCompactionRatio,
+	}, StorageConfig{
+		Format:     "text", // Default to text for compatibility
+		TextFile:   LogFileName,
+		BinaryFile: "moz.bin",
 	})
 }
 
-func NewWithConfig(config CompactionConfig) *KVStore {
+func NewWithConfig(compactionConfig CompactionConfig, storageConfig StorageConfig) *KVStore {
 	dataDir := DefaultDataDir
 	if envDir := os.Getenv("MOZ_DATA_DIR"); envDir != "" {
 		dataDir = envDir
@@ -65,12 +79,20 @@ func NewWithConfig(config CompactionConfig) *KVStore {
 		}
 	}
 
+	var logFile string
+	if storageConfig.Format == "binary" {
+		logFile = filepath.Join(dataDir, storageConfig.BinaryFile)
+	} else {
+		logFile = filepath.Join(dataDir, storageConfig.TextFile)
+	}
+
 	return &KVStore{
 		dataDir:          dataDir,
-		logFile:          filepath.Join(dataDir, LogFileName),
+		logFile:          logFile,
 		memoryMap:        make(map[string]string),
 		isLoaded:         false,
-		compactionConfig: config,
+		compactionConfig: compactionConfig,
+		storageConfig:    storageConfig,
 		operationCount:   0,
 		lastCompaction:   0,
 		isCompacting:     false,
