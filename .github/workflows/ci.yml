@@ -16,23 +16,31 @@ jobs:
       - name: 📥 チェックアウト
         uses: actions/checkout@v4
         
-      - name: 🐚 Bash環境設定
-        run: |
-          echo "SHELL=/bin/bash" >> $GITHUB_ENV
-          bash --version
+      - name: 🐹 Go言語セットアップ
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
           
-      - name: 📦 開発ツールインストール
+      - name: 📦 システムパッケージインストール
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
-          # shfmtインストール
-          GO_VERSION="1.21.0"
-          wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
-          sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
-          export PATH="/usr/local/go/bin:$PATH"
-          go install mvdan.cc/sh/v3/cmd/shfmt@latest
-          echo "/home/runner/go/bin" >> $GITHUB_PATH
           
+      - name: 🛠️ Goツールキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
+            
       - name: 🔧 依存関係セットアップ
         run: make install
         
@@ -63,9 +71,31 @@ jobs:
       - name: 📥 チェックアウト
         uses: actions/checkout@v4
         
-      - name: 📦 jqインストール
-        run: sudo apt-get update && sudo apt-get install -y jq bc
-        
+      - name: 🐹 Go言語セットアップ
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
+          
+      - name: 📦 システムパッケージインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc
+          
+      - name: 🛠️ Goツールキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
+            
       - name: 🔧 依存関係セットアップ
         run: make install
         
@@ -91,6 +121,26 @@ jobs:
       - name: 📥 チェックアウト
         uses: actions/checkout@v4
         
+      - name: 🐹 Go言語セットアップ
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
+          
+      - name: 🛠️ Goツールキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
+            
       - name: 🔧 依存関係セットアップ
         run: make install
         
@@ -147,10 +197,30 @@ jobs:
       - name: 📥 チェックアウト
         uses: actions/checkout@v4
         
-      - name: 📦 開発ツールインストール
+      - name: 🐹 Go言語セットアップ
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
+          
+      - name: 📦 システムパッケージインストール
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck jq bc
+          
+      - name: 🛠️ Goツールキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-
           
       - name: 🔧 make help
         run: make help
