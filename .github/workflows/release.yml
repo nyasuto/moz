@@ -177,7 +177,7 @@ jobs:
           sha256sum moz-kvstore-${RELEASE_VERSION}.zip >> checksums.txt
           
       - name: 🎁 GitHubリリース作成
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           name: 🚀 Moz KVストア ${{ env.RELEASE_VERSION }}
