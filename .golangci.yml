@@ -1,133 +1,101 @@
-# golangci-lint configuration
-# https://golangci-lint.run/usage/configuration/
-
+version: "2"
 run:
-  # Timeout for analysis
-  timeout: 5m
-  
-  # Exit code when at least one issue was found
   issues-exit-code: 1
-  
-  # Include test files in the analysis
   tests: false
-  
-  # Skip specific directories (moved to issues.exclude-dirs)
-
-# Issues configuration
-issues:
-  # Skip specific directories
-  exclude-dirs:
-    - vendor
-    - .git
-    - bin
-    
-  # Exclude test files from specific linters
-  exclude-rules:
-    # Exclude errcheck for test files (benchmarks don't need error checking)
-    - path: "_test\\.go"
-      linters:
-        - errcheck
-        - gosec
-    
-    # Exclude benchmark test files from specific checks
-    - path: "_benchmark_test\\.go"
-      linters:
-        - errcheck
-        - gosec
-        - gocritic
-        - gocyclo
-        - funlen
-
-  # Don't skip warning about context.TODO
-  exclude-use-default: false
-
-# Linters configuration
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Essential linters
     - errcheck
-    - gosimple
+    - gosec
     - govet
     - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
-    
-    # Additional useful linters
-    - gofmt
-    - goimports
     - misspell
     - revive
-    - gosec
-    
-  # Don't enable these heavy linters by default
-  # - gocritic
-  # - gocyclo
-  # - funlen
-
-# Linter-specific settings
-linters-settings:
-  errcheck:
-    # Report about not checking of errors in type assertions
-    check-type-assertions: true
-    
-    # Report about assignment of errors to blank identifier
-    check-blank: false
-    
-    # Exclude functions from errcheck
-    exclude-functions:
-      # Test helper functions that don't need error checking
-      - (*testing.T).Log
-      - (*testing.T).Logf
-      - (*testing.T).Error
-      - (*testing.T).Errorf
-      - (*testing.B).Log
-      - (*testing.B).Logf
-      - (*testing.B).Error
-      - (*testing.B).Errorf
-
-  gosec:
-    # To select a subset of rules to run
-    includes:
-      - G101 # Look for hard coded credentials
-      - G102 # Bind to all interfaces
-      - G103 # Audit the use of unsafe block
-      - G104 # Audit errors not checked
-      - G106 # Audit the use of ssh.InsecureIgnoreHostKey
-      - G107 # Url provided to HTTP request as taint input
-      - G108 # Profiling endpoint automatically exposed on /debug/pprof
-      - G109 # Potential Integer overflow made by strconv.Atoi result conversion to int16/32
-      - G110 # Potential DoS vulnerability via decompression bomb
-      - G201 # SQL query construction using format string
-      - G202 # SQL query construction using string concatenation
-      - G203 # Use of unescaped data in HTML templates
-      - G204 # Audit use of command execution
-      - G301 # Poor file permissions used when creating a directory
-      - G302 # Poor file permissions used with chmod
-      - G303 # Creating tempfile using a predictable path
-      - G304 # File path provided as taint input
-      - G305 # File traversal when extracting zip/tar archive
-      - G306 # Poor file permissions used when writing to a new file
-      - G307 # Deferring a method which returns an error
-      - G401 # Detect the usage of DES, RC4, MD5 or SHA1
-      - G402 # Look for bad TLS connection settings
-      - G403 # Ensure minimum RSA key length of 2048 bits
-      - G404 # Insecure random number source (rand)
-      - G501 # Import blocklist: crypto/md5
-      - G502 # Import blocklist: crypto/des
-      - G503 # Import blocklist: crypto/rc4
-      - G504 # Import blocklist: net/http/cgi
-      - G505 # Import blocklist: crypto/sha1
-    
-    # Exclude rules for test files
-    excludes:
-      - G104 # Errors not checked in test files are often acceptable
-
-  revive:
-    # Minimal revive configuration
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (*testing.T).Log
+        - (*testing.T).Logf
+        - (*testing.T).Error
+        - (*testing.T).Errorf
+        - (*testing.B).Log
+        - (*testing.B).Logf
+        - (*testing.B).Error
+        - (*testing.B).Errorf
+    gosec:
+      includes:
+        - G101
+        - G102
+        - G103
+        - G104
+        - G106
+        - G107
+        - G108
+        - G109
+        - G110
+        - G201
+        - G202
+        - G203
+        - G204
+        - G301
+        - G302
+        - G303
+        - G304
+        - G305
+        - G306
+        - G307
+        - G401
+        - G402
+        - G403
+        - G404
+        - G501
+        - G502
+        - G503
+        - G504
+        - G505
+      excludes:
+        - G104
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    generated: lax
     rules:
-      - name: exported
-        disabled: true # Don't require comments on exported functions
-      - name: package-comments
-        disabled: true # Don't require package comments
+      - linters:
+          - errcheck
+          - gosec
+        path: _test\.go
+      - linters:
+          - errcheck
+          - funlen
+          - gocritic
+          - gocyclo
+          - gosec
+        path: _benchmark_test\.go
+    paths:
+      - vendor
+      - .git
+      - bin
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - .git
+      - bin
+      - third_party$
+      - builtin$
+      - examples$
