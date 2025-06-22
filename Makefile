@@ -146,7 +146,7 @@ git-hooks:
 	@echo 'fi' >> .git/hooks/pre-commit
 	@echo '' >> .git/hooks/pre-commit
 	@echo '# Check branch naming convention' >> .git/hooks/pre-commit
-	@echo 'if ! echo "$$current_branch" | grep -E "^(feat|fix|hotfix|test|docs|ci|cicd|refactor|perf|security|deps)/.*" > /dev/null; then' >> .git/hooks/pre-commit
+	@echo 'if ! echo "$$current_branch" | grep -E "^(feat|fix|hotfix|test|docs|ci|cicd|refactor|perf|security|deps|dependabot)/.*" > /dev/null; then' >> .git/hooks/pre-commit
 	@echo '    echo "⚠️  ブランチ名がCLAUDE.mdの命名規則に従っていません"' >> .git/hooks/pre-commit
 	@echo '    echo "📋 推奨形式:"' >> .git/hooks/pre-commit
 	@echo '    echo "   feat/issue-X-feature-name"' >> .git/hooks/pre-commit
