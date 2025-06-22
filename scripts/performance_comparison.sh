@@ -172,14 +172,16 @@ EOF
         "duration": "$(echo "$shell_result" | cut -d'|' -f3)"
       },
       "speedup_factor": "$speedup"
-    }EOF
+    }
+EOF
         done
         
-        cat >> "${report_file}.json" << EOF
+        cat >> "${report_file}.json" << 'EOF'
 
   }
 }
 EOF
+    fi
     
     # Generate Markdown report
     if [ "$REPORT_FORMAT" = "markdown" ] || [ "$REPORT_FORMAT" = "both" ]; then
