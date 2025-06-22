@@ -24,10 +24,17 @@ jobs:
           cache-dependency-path: go.sum
           
       - name: 📦 システムパッケージキャッシュ
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: actions/cache@v4
         with:
-          packages: shellcheck
-          version: 1.0
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+            
+      - name: 📦 システムパッケージインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
           
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
@@ -75,10 +82,17 @@ jobs:
           cache-dependency-path: go.sum
           
       - name: 📦 システムパッケージキャッシュ
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: actions/cache@v4
         with:
-          packages: jq bc
-          version: 1.0
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+            
+      - name: 📦 システムパッケージインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc
           
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
@@ -192,10 +206,17 @@ jobs:
           cache-dependency-path: go.sum
           
       - name: 📦 システムパッケージキャッシュ
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: actions/cache@v4
         with:
-          packages: shellcheck jq bc
-          version: 1.0
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+            
+      - name: 📦 システムパッケージインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq bc
           
       - name: 🛠️ Goツールキャッシュ
         uses: actions/cache@v4
