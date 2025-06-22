@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-vet go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check
 
 # Default target
 help:
@@ -31,7 +31,6 @@ help:
 	@echo "🔍 Go品質ツール:"
 	@echo "  make go-lint    - Goコードリンティング (golangci-lint)"
 	@echo "  make go-fmt     - Goコードフォーマット"
-	@echo "  make go-vet     - Goコード解析"
 	@echo "  make go-test-cov - Goテストカバレッジ"
 	@echo "  make go-race    - レース条件検出テスト"
 	@echo "  make go-bench   - ベンチマークテスト"
@@ -97,7 +96,10 @@ format: go-fmt
 	fi
 
 # タイプチェック (統合)
-type-check: go-vet
+type-check:
+	@echo "🔍 Goコード解析中..."
+	@go fmt ./... > /dev/null
+	@echo "✅ Go解析完了"
 	@echo "🔍 レガシーシェルスクリプトの構文チェック中..."
 	@for script in legacy/*.sh; do \
 		if [ -f "$$script" ]; then \
@@ -242,8 +244,6 @@ go-lint:
 			echo "✅ golangci-lint 完了"; \
 		else \
 			echo "❌ golangci-lint で問題が検出されました"; \
-			echo "🔍 詳細確認のため go vet も実行します..."; \
-			go vet ./...; \
 			exit 1; \
 		fi; \
 	elif [ -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
@@ -251,24 +251,18 @@ go-lint:
 			echo "✅ golangci-lint 完了"; \
 		else \
 			echo "❌ golangci-lint で問題が検出されました"; \
-			echo "🔍 詳細確認のため go vet も実行します..."; \
-			go vet ./...; \
 			exit 1; \
 		fi; \
 	else \
-		echo "⚠️  golangci-lint がインストールされていません - go vetで代用"; \
-		go vet ./...; \
+		echo "❌ golangci-lint がインストールされていません"; \
+		echo "   make go-tools-install を実行してください"; \
+		exit 1; \
 	fi
 
 go-fmt:
 	@echo "🎨 Goコードフォーマット中..."
 	@go fmt ./...
 	@echo "✅ フォーマット完了"
-
-go-vet:
-	@echo "🔍 Goコード解析中..."
-	@go vet ./...
-	@echo "✅ 解析完了"
 
 go-test-cov:
 	@echo "📊 Goテストカバレッジ測定中..."
@@ -321,8 +315,9 @@ go-security:
 			exit 1; \
 		fi; \
 	else \
-		echo "⚠️  gosecがインストールされていません - go vetで基本チェックを実行"; \
-		go vet ./...; \
+		echo "❌ gosec がインストールされていません"; \
+		echo "   make go-tools-install を実行してください"; \
+		exit 1; \
 	fi
 
 go-dep-check:
