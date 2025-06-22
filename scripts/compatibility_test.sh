@@ -20,12 +20,12 @@ FAILED=0
 # Helper functions
 pass() {
     echo -e "${GREEN}✅ PASS${NC}: $1"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 }
 
 fail() {
     echo -e "${RED}❌ FAIL${NC}: $1"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 }
 
 warn() {
@@ -73,8 +73,14 @@ test_basic_operations() {
     fi
     
     # Go adds data
-    ./bin/moz put country "Japan" >/dev/null 2>&1
-    ./bin/moz put status "active" >/dev/null 2>&1
+    if ! ./bin/moz put country "Japan" >/dev/null 2>&1; then
+        fail "Go put command failed for 'country'"
+        return 1
+    fi
+    if ! ./bin/moz put status "active" >/dev/null 2>&1; then
+        fail "Go put command failed for 'status'"
+        return 1
+    fi
     
     # Shell reads Go data
     shell_result=$(legacy/get.sh country 2>/dev/null || echo "ERROR")
@@ -112,7 +118,10 @@ test_update_operations() {
     fi
     
     # Go updates value
-    ./bin/moz put name "Charlie" >/dev/null 2>&1
+    if ! ./bin/moz put name "Charlie" >/dev/null 2>&1; then
+        fail "Go put command failed for update"
+        return 1
+    fi
     
     # Shell reads Go update
     shell_result=$(legacy/get.sh name)
@@ -141,8 +150,14 @@ test_delete_operations() {
     fi
     
     # Go deletes key
-    ./bin/moz put temp "temporary" >/dev/null 2>&1
-    ./bin/moz del temp >/dev/null 2>&1
+    if ! ./bin/moz put temp "temporary" >/dev/null 2>&1; then
+        fail "Go put command failed for temp"
+        return 1
+    fi
+    if ! ./bin/moz del temp >/dev/null 2>&1; then
+        fail "Go del command failed for temp"
+        return 1
+    fi
     
     # Shell should not find deleted key
     shell_result=$(legacy/get.sh temp 2>/dev/null || echo "NOT_FOUND")
@@ -169,7 +184,10 @@ test_large_data() {
     
     # Add 100 entries via Go
     for i in {1..50}; do
-        ./bin/moz put "go_key_$i" "go_value_$i" >/dev/null 2>&1
+        if ! ./bin/moz put "go_key_$i" "go_value_$i" >/dev/null 2>&1; then
+            fail "Go put command failed for go_key_$i"
+            return 1
+        fi
     done
     
     # Both should see all 100 entries
@@ -202,7 +220,10 @@ test_log_format() {
     # Clear and add mixed data
     rm -f moz.log
     legacy/put.sh "test_tab" "value with spaces"
-    ./bin/moz put "test_special" "value@#$%^&*()" >/dev/null 2>&1
+    if ! ./bin/moz put "test_special" "value@#$%^&*()" >/dev/null 2>&1; then
+        fail "Go put command failed for test_special"
+        return 1
+    fi
     
     # Check log file format is TAB-delimited
     if grep -q $'\t' moz.log; then
