@@ -231,15 +231,26 @@ go-mod-tidy:
 # Go品質ツール
 go-lint:
 	@echo "🔍 Goコードリンティング中..."
-	@if [ -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
-		$$(go env GOPATH)/bin/golangci-lint run ./... || echo "⚠️  golangci-lint バージョン問題 - go vetで代用"; \
-	elif command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run ./... || echo "⚠️  golangci-lint バージョン問題 - go vetで代用"; \
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		if golangci-lint run ./...; then \
+			echo "✅ golangci-lint 完了"; \
+		else \
+			echo "❌ golangci-lint で問題が検出されました"; \
+			echo "🔍 詳細確認のため go vet も実行します..."; \
+			go vet ./...; \
+		fi; \
+	elif [ -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
+		if $$(go env GOPATH)/bin/golangci-lint run ./...; then \
+			echo "✅ golangci-lint 完了"; \
+		else \
+			echo "❌ golangci-lint で問題が検出されました"; \
+			echo "🔍 詳細確認のため go vet も実行します..."; \
+			go vet ./...; \
+		fi; \
 	else \
 		echo "⚠️  golangci-lint がインストールされていません - go vetで代用"; \
+		go vet ./...; \
 	fi
-	@echo "🔍 go vetによる基本リンティング実行..."
-	@go vet ./...
 
 go-fmt:
 	@echo "🎨 Goコードフォーマット中..."
@@ -279,17 +290,26 @@ go-tools-install:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest || echo "⚠️  golangci-lint インストール失敗"
 	@echo "📦 govulncheck インストール中..." 
 	@go install golang.org/x/vuln/cmd/govulncheck@latest || echo "⚠️  govulncheck インストール失敗"
-	@echo "⚠️  gosec インストールをスキップ (パッケージ問題)"
+	@echo "📦 gosec インストール中..." 
+	@go install github.com/securego/gosec/v2/cmd/gosec@latest || echo "⚠️  gosec インストール失敗"
 	@echo "✅ 開発ツールインストール完了"
 
 go-security:
 	@echo "🔒 セキュリティスキャン実行中..."
-	@if [ -f "$$(go env GOPATH)/bin/gosec" ]; then \
-		$$(go env GOPATH)/bin/gosec ./...; \
-	elif command -v gosec >/dev/null 2>&1; then \
-		gosec ./...; \
+	@if command -v gosec >/dev/null 2>&1; then \
+		if gosec ./...; then \
+			echo "✅ gosec セキュリティスキャン完了 - 問題なし"; \
+		else \
+			echo "⚠️  gosec で潜在的なセキュリティ問題が検出されました"; \
+		fi; \
+	elif [ -f "$$(go env GOPATH)/bin/gosec" ]; then \
+		if $$(go env GOPATH)/bin/gosec ./...; then \
+			echo "✅ gosec セキュリティスキャン完了 - 問題なし"; \
+		else \
+			echo "⚠️  gosec で潜在的なセキュリティ問題が検出されました"; \
+		fi; \
 	else \
-		echo "⚠️  gosecが利用できません - go vetでセキュリティチェックを実行"; \
+		echo "⚠️  gosecがインストールされていません - go vetで基本チェックを実行"; \
 		go vet ./...; \
 	fi
 
