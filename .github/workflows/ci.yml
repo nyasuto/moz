@@ -252,7 +252,7 @@ jobs:
           branch_name="${{ github.head_ref }}"
           echo "チェック対象ブランチ: $branch_name"
           
-          if ! echo "$branch_name" | grep -E "^(feat|fix|hotfix|test|docs|ci|cicd|refactor|perf|security|deps)/.*"; then
+          if ! echo "$branch_name" | grep -E "^(feat|fix|hotfix|test|docs|ci|cicd|refactor|perf|security|deps|dependabot)/.*"; then
             echo "❌ ブランチ名がCLAUDE.mdの命名規則に従っていません"
             echo "📋 推奨形式:"
             echo "   feat/issue-X-feature-name"
@@ -261,6 +261,7 @@ jobs:
             echo "   docs/X-description"
             echo "   test/X-description"
             echo "   refactor/X-description"
+            echo "   dependabot/* (automated dependency updates)"
             exit 1
           fi
           

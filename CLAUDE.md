@@ -134,6 +134,7 @@ Use descriptive, consistent branch names:
 - Performance: `perf/X-description`
 - Security: `security/X-description`
 - Dependencies: `deps/X-description`
+- Automated dependency updates: `dependabot/*` (handled by Dependabot)
 
 ### Commit Message Format
 
