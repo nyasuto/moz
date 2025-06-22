@@ -5,8 +5,7 @@ moz.log
 *.tmp
 /tmp/moz_*
 
-# 性能テスト結果は保存する
-!benchmark_results/
+benchmark_results/
 
 # macOS
 .DS_Store
