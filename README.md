@@ -90,54 +90,73 @@ name    Bob
 
 ## **🔁 フェーズ2：Goによるログ構造型KVストア（実装完了✅）**
 
+### **実装済み機能**
+- ✅ **CRUD操作完全実装**: PUT/GET/DELETE/LIST/COMPACT
+- ✅ **メモリマップ最適化**: 高速なデータアクセス
+- ✅ **スレッドセーフ実装**: sync.RWMutex使用
+- ✅ **レガシー互換性**: シェル版とファイル形式完全互換
+- ✅ **統合ビルドシステム**: Makefileベースの開発ワークフロー
+- ✅ **包括的テスト**: 品質チェック・性能テスト・CI/CD完備
+
+### **アーキテクチャ**
 - 現代的なGoプロジェクト構造を採用
-    
-- cmd/moz/ に CLI エントリーポイント
-    
+- cmd/moz/ に CLI エントリーポイント  
 - internal/kvstore/ にKVストア実装
-    
-- thread-safe な実装（sync.RWMutex使用）
-    
 - moz.log をそのままGoで読み込んで処理
-    
-- メモリ上に map[string]string を構築
-    
+- メモリ上に map[string]string を構築（遅延ロード）
 - compact() 機能で最新状態を再構成
-    
-- Makefileによる統合開発ワークフロー
 
 ### **使用方法**
 
 ```bash
-# ビルド
-make go-build
+# 開発環境セットアップ
+make dev
 
-# 基本操作
+# Go版 基本操作
 make go-run ARGS="put name Alice"
-make go-run ARGS="get name"
-make go-run ARGS="list"
-make go-run ARGS="del name"
-make go-run ARGS="compact"
+make go-run ARGS="get name"           # Output: Alice
+make go-run ARGS="list"               # 全キー・バリュー表示
+make go-run ARGS="del name"           # キー削除
+make go-run ARGS="compact"            # ストレージ最適化
+
+# バイナリビルドと直接実行
+make go-build
+./bin/moz put city Tokyo
+./bin/moz get city                    # Output: Tokyo
 
 # レガシーシェル版も利用可能
-make dev
 ./legacy/put.sh name Bob
-./legacy/get.sh name
+./legacy/get.sh name                  # Output: Bob
+
+# 品質チェック
+make quality                          # 基本品質チェック
+make quality-full                     # セキュリティ含む包括的チェック
 ```
     
 
   
 
-## **🚀 今後のロードマップ**
+## **🚀 開発ロードマップ**
 
-|**フェーズ**|**機能**|**内容**|
-|---|---|---|
-|3|インデックス対応|高速な検索を実現|
-|4|クエリ言語導入（JSONPath等）|条件付き検索の高度化|
-|5|バックグラウンドコンパクション|LSMツリーのような構造へ|
-|6|スナップショット対応|バックアップ・復元機能|
-|7|並列処理とロック|複数プロセスの安全な同時操作対応|
-|8|REST API対応|外部との通信・Web連携|
+### **現在のステータス**
+- ✅ **フェーズ1完了**: シェルベースKVストア
+- ✅ **フェーズ2完了**: Go実装・CRUD操作・メモリ最適化
+
+### **次期開発予定**
+
+|**フェーズ**|**機能**|**ステータス**|**内容**|
+|---|---|---|---|
+|**2.1**|**自動コンパクション**|🔄 予定|ファイルサイズ閾値での自動最適化|
+|**2.2**|**性能ベンチマーク**|🔄 予定|Go版とシェル版の詳細比較測定|
+|**3**|**インデックス対応**|📋 計画中|高速な検索を実現|
+|**4**|**クエリ言語導入**|📋 計画中|条件付き検索の高度化|
+|**5**|**バックグラウンドコンパクション**|📋 計画中|LSMツリーのような構造へ|
+|**6**|**スナップショット対応**|📋 計画中|バックアップ・復元機能|
+|**7**|**並列処理とロック**|📋 計画中|複数プロセスの安全な同時操作対応|
+|**8**|**REST API対応**|📋 計画中|外部との通信・Web連携|
+
+### **開発状況追跡**
+GitHub Issues で進捗管理中。[プロジェクトボード](https://github.com/nyasuto/moz/issues)で最新状況を確認できます。
 
 ## **🤖 AIエージェント向け文脈説明**
 
