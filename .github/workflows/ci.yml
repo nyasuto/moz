@@ -31,7 +31,9 @@ jobs:
           sudo apt-get install -y shellcheck
           
       - name: 🔧 依存関係セットアップ
-        run: make install
+        run: |
+          chmod +x legacy/*.sh
+          go mod download
         
       - name: 🔍 golangci-lint
         uses: golangci/golangci-lint-action@v8
@@ -91,7 +93,9 @@ jobs:
           sudo apt-get install -y jq bc
             
       - name: 🔧 依存関係セットアップ
-        run: make install
+        run: |
+          chmod +x legacy/*.sh
+          go mod download
         
       - name: 🧪 小規模性能テスト (100件)
         run: ./legacy/test_performance.sh 100
@@ -125,7 +129,9 @@ jobs:
             go.mod
             
       - name: 🔧 依存関係セットアップ
-        run: make install
+        run: |
+          chmod +x legacy/*.sh
+          go mod download
         
       - name: 🧪 基本機能テスト
         run: |
@@ -193,6 +199,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck jq bc
+          
+      - name: 🔧 依存関係セットアップ
+        run: |
+          chmod +x legacy/*.sh
+          go mod download
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
           
       - name: 🔧 make help
         run: make help
