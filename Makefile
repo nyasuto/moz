@@ -10,7 +10,8 @@ help:
 	@echo "  make test-cov   - カバレッジ付きテスト実行"
 	@echo ""
 	@echo "🧹 品質チェック:"
-	@echo "  make quality    - 全品質チェック実行"
+	@echo "  make quality    - 基本品質チェック実行 (CI互換)"
+	@echo "  make quality-full - 包括的品質チェック (セキュリティ含む)"
 	@echo "  make quality-fix - 自動修正可能な問題を修正"
 	@echo "  make lint       - リンティング"
 	@echo "  make format     - コードフォーマット"
@@ -104,17 +105,22 @@ type-check: go-vet
 		fi \
 	done
 
-# 品質チェック統合
-quality: lint type-check go-security
+# 品質チェック統合 (ローカル用)
+quality: lint type-check
 	@echo "🎯 品質チェック完了"
+
+# 包括的品質チェック (セキュリティ含む - ローカル用)
+quality-full: lint type-check go-security
+	@echo "🎯 包括的品質チェック完了"
 
 # 自動修正
 quality-fix: format
 	@echo "🔧 自動修正完了"
 
-# PR準備チェック
+# PR準備チェック (CI互換)
 pr-ready: quality test
 	@echo "🚀 PR準備完了！"
+	@echo "💡 Note: セキュリティチェックはCI/CDで実行されます"
 	@echo "📝 次のステップ:"
 	@echo "  1. git add ."
 	@echo "  2. git commit -m 'feat: 新機能追加'"

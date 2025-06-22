@@ -30,22 +30,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
           
-      - name: 🛠️ Goツールキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
-            ${{ runner.os }}-go-
-            
       - name: 🔧 依存関係セットアップ
         run: make install
         
-      - name: 🔍 リンティング
-        run: make lint
+      - name: 🔍 golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          
+      - name: 🔍 シェルスクリプトリンティング
+        run: |
+          echo "🔍 レガシーシェルスクリプトのリンティング中..."
+          if command -v shellcheck >/dev/null 2>&1; then \
+            shellcheck legacy/*.sh; \
+          else \
+            echo "⚠️  shellcheck がインストールされていません"; \
+            echo "   brew install shellcheck でインストールしてください"; \
+          fi
         
       - name: ✨ フォーマットチェック
         run: |
@@ -59,8 +61,11 @@ jobs:
       - name: 🔍 構文チェック
         run: make type-check
         
-      - name: 🎯 統合品質チェック
-        run: make quality
+      - name: 🛡️ 脆弱性チェック
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: 'stable'
+          go-package: './...'
 
   performance-tests:
     name: 📊 性能テスト
@@ -84,17 +89,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq bc
-          
-      - name: 🛠️ Goツールキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
-            ${{ runner.os }}-go-
             
       - name: 🔧 依存関係セットアップ
         run: make install
@@ -129,17 +123,6 @@ jobs:
           cache-dependency-path: |
             go.sum
             go.mod
-          
-      - name: 🛠️ Goツールキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
-            ${{ runner.os }}-go-
             
       - name: 🔧 依存関係セットアップ
         run: make install
@@ -211,17 +194,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck jq bc
           
-      - name: 🛠️ Goツールキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile', 'go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
-            ${{ runner.os }}-go-
-          
       - name: 🔧 make help
         run: make help
         
@@ -238,7 +210,7 @@ jobs:
         run: make pr-ready
 
   security-scan:
-    name: 🔒 セキュリティスキャン
+    name: 🔒 追加セキュリティスキャン
     runs-on: ubuntu-latest
     
     steps:
