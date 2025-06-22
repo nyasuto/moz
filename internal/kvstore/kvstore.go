@@ -14,12 +14,12 @@ const (
 )
 
 type KVStore struct {
-	dataDir    string
-	logFile    string
-	mu         sync.RWMutex
-	memoryMap  map[string]string
-	isLoaded   bool
-	mapMu      sync.RWMutex
+	dataDir   string
+	logFile   string
+	mu        sync.RWMutex
+	memoryMap map[string]string
+	isLoaded  bool
+	mapMu     sync.RWMutex
 }
 
 func New() *KVStore {

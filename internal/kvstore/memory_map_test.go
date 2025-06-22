@@ -144,7 +144,7 @@ func TestMemoryMapUpdate(t *testing.T) {
 
 	// Test key updates
 	kv.Put("update_key", "initial_value")
-	
+
 	value, _ := kv.Get("update_key")
 	if value != "initial_value" {
 		t.Errorf("Expected initial_value, got %s", value)
@@ -152,7 +152,7 @@ func TestMemoryMapUpdate(t *testing.T) {
 
 	// Update the same key
 	kv.Put("update_key", "updated_value")
-	
+
 	value, _ = kv.Get("update_key")
 	if value != "updated_value" {
 		t.Errorf("Expected updated_value, got %s", value)
