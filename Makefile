@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check bench-go bench-shell bench-compare bench-all bench-quick
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check bench-go bench-shell bench-compare bench-binary bench-all bench-quick
 
 # Default target
 help:
@@ -39,6 +39,7 @@ help:
 	@echo "  make bench-go   - Go実装ベンチマーク実行"
 	@echo "  make bench-shell - シェル実装ベンチマーク実行" 
 	@echo "  make bench-compare - Go vs シェル性能比較"
+	@echo "  make bench-binary - バイナリフォーマット性能測定"
 	@echo "  make bench-all  - 全ベンチマーク実行"
 	@echo ""
 	@echo "🛠️ Go開発ツール:"
@@ -361,7 +362,14 @@ bench-compare:
 	@scripts/performance_comparison.sh 1000 both
 	@echo "✅ 性能比較完了"
 
-bench-all: bench-go bench-shell bench-compare
+# バイナリフォーマット性能ベンチマーク
+bench-binary:
+	@echo "🚀 バイナリフォーマット性能測定実行中..."
+	@mkdir -p benchmark_results
+	@chmod +x scripts/binary_benchmark.sh
+	@scripts/binary_benchmark.sh 1000
+
+bench-all: bench-go bench-shell bench-compare bench-binary
 	@echo "🎯 全ベンチマーク完了"
 	@echo "📁 結果はbenchmark_results/ディレクトリを確認してください"
 
