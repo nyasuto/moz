@@ -25,7 +25,7 @@ func New() *KVStore {
 		dataDir = envDir
 	}
 
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	if err := os.MkdirAll(dataDir, 0750); err != nil {
 		panic(fmt.Sprintf("Failed to create data directory: %v", err))
 	}
 
@@ -44,7 +44,7 @@ func (kv *KVStore) Put(key, value string) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
-	file, err := os.OpenFile(kv.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(kv.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
@@ -94,7 +94,7 @@ func (kv *KVStore) Delete(key string) error {
 		return fmt.Errorf("key not found: %s", key)
 	}
 
-	file, err := os.OpenFile(kv.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(kv.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
@@ -137,7 +137,7 @@ func (kv *KVStore) Compact() error {
 	}
 
 	tempFile := kv.logFile + ".tmp"
-	file, err := os.Create(tempFile)
+	file, err := os.Create(tempFile) // #nosec G304 - safe controlled temp file creation
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -153,13 +153,13 @@ func (kv *KVStore) Compact() error {
 		// Use TAB-delimited format for legacy compatibility
 		logEntry := fmt.Sprintf("%s\t%s\n", key, data[key])
 		if _, err := file.WriteString(logEntry); err != nil {
-			os.Remove(tempFile)
+			_ = os.Remove(tempFile) // Best effort cleanup
 			return fmt.Errorf("failed to write to temp file: %w", err)
 		}
 	}
 
 	if err := os.Rename(tempFile, kv.logFile); err != nil {
-		os.Remove(tempFile)
+		_ = os.Remove(tempFile) // Best effort cleanup
 		return fmt.Errorf("failed to replace log file: %w", err)
 	}
 
