@@ -292,7 +292,7 @@ go-install:
 go-tools-install:
 	@echo "🛠️ Go開発ツールインストール中..."
 	@echo "📦 golangci-lint インストール中..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest || echo "⚠️  golangci-lint インストール失敗"
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest || echo "⚠️  golangci-lint インストール失敗"
 	@echo "📦 govulncheck インストール中..." 
 	@go install golang.org/x/vuln/cmd/govulncheck@latest || echo "⚠️  govulncheck インストール失敗"
 	@echo "📦 gosec インストール中..." 
