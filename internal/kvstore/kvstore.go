@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -277,9 +278,7 @@ func (kv *KVStore) getMemoryMap() (map[string]string, error) {
 
 	// Return a copy to prevent external modifications
 	result := make(map[string]string, len(kv.memoryMap))
-	for k, v := range kv.memoryMap {
-		result[k] = v
-	}
+	maps.Copy(result, kv.memoryMap)
 	return result, nil
 }
 
