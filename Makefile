@@ -1,4 +1,4 @@
-.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check bench-go bench-shell bench-compare bench-binary bench-all bench-quick
+.PHONY: help install build clean dev test lint format type-check quality quality-fix pr-ready git-hooks env-info go-build go-test go-run go-clean go-mod-tidy go-lint go-fmt go-test-cov go-race go-bench go-install go-tools-install go-security go-dep-check bench-go bench-shell bench-compare bench-binary bench-all bench-quick server test-api test-api-full
 
 # Default target
 help:
@@ -27,6 +27,9 @@ help:
 	@echo "  make go-run     - Goアプリケーション実行"
 	@echo "  make go-clean   - Goビルド成果物クリーンアップ"
 	@echo "  make go-mod-tidy - Go依存関係整理"
+	@echo "  make server     - REST APIサーバー起動"
+	@echo "  make test-api   - REST API統合テスト実行"
+	@echo "  make test-api-full - 包括的REST API統合テスト実行"
 	@echo ""
 	@echo "🔍 Go品質ツール:"
 	@echo "  make go-lint    - Goコードリンティング (golangci-lint)"
@@ -218,7 +221,8 @@ env-info:
 go-build:
 	@echo "🐹 Goアプリケーションビルド中..."
 	@go build -o bin/moz ./cmd/moz
-	@echo "✅ ビルド完了: bin/moz"
+	@go build -o bin/moz-server ./cmd/moz-server
+	@echo "✅ ビルド完了: bin/moz, bin/moz-server"
 
 go-test:
 	@echo "🧪 Goテスト実行中..."
@@ -379,3 +383,80 @@ bench-quick:
 	@chmod +x scripts/performance_comparison.sh
 	@scripts/performance_comparison.sh 100 json
 	@echo "✅ クイック性能テスト完了"
+
+# REST API Server
+server:
+	@echo "🌐 REST APIサーバー起動中..."
+	@if [ ! -f bin/moz-server ]; then \
+		echo "📦 moz-serverをビルド中..."; \
+		go build -o bin/moz-server ./cmd/moz-server; \
+	fi
+	@echo "🚀 サーバー起動: http://localhost:8080"
+	@echo "💡 使用例:"
+	@echo "  curl -X POST http://localhost:8080/api/v1/login \\"
+	@echo "    -H 'Content-Type: application/json' \\"
+	@echo "    -d '{\"username\":\"admin\",\"password\":\"password\"}'"
+	@echo ""
+	@echo "🔑 認証情報:"
+	@echo "  Username: admin"
+	@echo "  Password: password"
+	@echo ""
+	@echo "📋 利用可能エンドポイント:"
+	@echo "  POST /api/v1/login           - JWT認証"
+	@echo "  GET  /api/v1/health          - ヘルスチェック"
+	@echo "  PUT  /api/v1/kv/{key}        - データ作成・更新"
+	@echo "  GET  /api/v1/kv/{key}        - データ取得"
+	@echo "  DELETE /api/v1/kv/{key}      - データ削除"
+	@echo "  GET  /api/v1/kv              - 全データ一覧"
+	@echo "  GET  /api/v1/stats           - 統計情報"
+	@echo ""
+	@echo "⚠️  Ctrl+C で停止"
+	@./bin/moz-server --port 8080
+
+# REST API Integration Test  
+test-api:
+	@echo "🧪 REST API統合テスト実行中..."
+	@if [ ! -f bin/moz-server ]; then \
+		echo "📦 moz-serverをビルド中..."; \
+		go build -o bin/moz-server ./cmd/moz-server; \
+	fi
+	@echo "🚀 テスト用サーバー起動中..."
+	@./bin/moz-server --port 8081 & \
+	SERVER_PID=$$!; \
+	echo "⏳ サーバー起動待機中..."; \
+	sleep 3; \
+	echo "🔗 テスト実行中..."; \
+	if SERVER_PORT=8081 ./scripts/simple_api_test.sh; then \
+		echo "✅ REST API統合テスト完了"; \
+		kill $$SERVER_PID 2>/dev/null || true; \
+		wait $$SERVER_PID 2>/dev/null || true; \
+	else \
+		echo "❌ REST API統合テスト失敗"; \
+		kill $$SERVER_PID 2>/dev/null || true; \
+		wait $$SERVER_PID 2>/dev/null || true; \
+		exit 1; \
+	fi
+
+# Comprehensive REST API Test (all endpoints)
+test-api-full:
+	@echo "🧪 包括的REST API統合テスト実行中..."
+	@if [ ! -f bin/moz-server ]; then \
+		echo "📦 moz-serverをビルド中..."; \
+		go build -o bin/moz-server ./cmd/moz-server; \
+	fi
+	@echo "🚀 テスト用サーバー起動中..."
+	@./bin/moz-server --port 8082 & \
+	SERVER_PID=$$!; \
+	echo "⏳ サーバー起動待機中..."; \
+	sleep 3; \
+	echo "🔗 包括的テスト実行中..."; \
+	if SERVER_PORT=8082 ./scripts/test_rest_api.sh; then \
+		echo "✅ 包括的REST API統合テスト完了"; \
+		kill $$SERVER_PID 2>/dev/null || true; \
+		wait $$SERVER_PID 2>/dev/null || true; \
+	else \
+		echo "❌ 包括的REST API統合テスト失敗"; \
+		kill $$SERVER_PID 2>/dev/null || true; \
+		wait $$SERVER_PID 2>/dev/null || true; \
+		exit 1; \
+	fi
