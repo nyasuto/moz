@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/nyasuto/moz/internal/kvstore"
+	"github.com/nyasuto/moz/internal/query"
 )
 
 func main() {
@@ -263,6 +265,61 @@ func main() {
 		}
 		fmt.Println("✅ Index validation passed")
 
+	case "query":
+		if len(args) < 2 {
+			fmt.Println("Usage: moz query \"SELECT * FROM moz WHERE key = 'value'\"")
+			os.Exit(1)
+		}
+		queryStr := strings.Join(args[1:], " ")
+
+		// Parse and execute query
+		lexer := query.NewLexer(queryStr)
+		parser := query.NewParser(lexer)
+		stmt := parser.ParseQuery()
+
+		if len(parser.Errors()) > 0 {
+			fmt.Printf("❌ Query parsing errors:\n")
+			for _, err := range parser.Errors() {
+				fmt.Printf("  - %s\n", err)
+			}
+			os.Exit(1)
+		}
+
+		executor := query.NewExecutor(store)
+		result := executor.Execute(stmt)
+
+		if result.Error != nil {
+			log.Fatalf("Query execution error: %v", result.Error)
+		}
+
+		// Display results
+		selectStmt, ok := stmt.(*query.SelectStatement)
+		if !ok {
+			fmt.Println("❌ Invalid statement type")
+			os.Exit(1)
+		}
+
+		if len(selectStmt.Fields) > 0 {
+			if _, ok := selectStmt.Fields[0].(*query.FunctionExpression); ok {
+				// Aggregation query
+				fmt.Printf("Count: %d\n", result.Count)
+			} else {
+				// Regular SELECT query
+				if len(result.Rows) == 0 {
+					fmt.Println("No results found")
+				} else {
+					fmt.Printf("🔍 Query results (%d rows):\n", len(result.Rows))
+					for i, row := range result.Rows {
+						fmt.Printf("%d. ", i+1)
+						for field, value := range row {
+							fmt.Printf("%s: %s  ", field, value)
+						}
+						fmt.Println()
+					}
+				}
+			}
+		}
+
 	case "help":
 		printUsage()
 
@@ -293,6 +350,11 @@ func printUsage() {
 	fmt.Println("  moz prefix <prefix>     - プレフィックス検索")
 	fmt.Println("  moz sorted              - ソート済み一覧")
 	fmt.Println("")
+	fmt.Println("クエリ言語:")
+	fmt.Println("  moz query \"SELECT * FROM moz WHERE key = 'value'\"")
+	fmt.Println("  moz query \"SELECT * FROM moz WHERE key LIKE 'user%'\"")
+	fmt.Println("  moz query \"SELECT COUNT(*) FROM moz WHERE value CONTAINS 'admin'\"")
+	fmt.Println("")
 	fmt.Println("管理操作:")
 	fmt.Println("  moz compact            - ストレージ最適化")
 	fmt.Println("  moz stats              - ストレージ統計表示")
@@ -308,6 +370,7 @@ func printUsage() {
 	fmt.Println("  moz --format=binary put key value   # バイナリ形式で保存")
 	fmt.Println("  moz --index=hash put user alice     # Hash Index使用")
 	fmt.Println("  moz --index=btree range a z         # B-Tree Index範囲検索")
+	fmt.Println("  moz query \"SELECT * FROM moz WHERE key LIKE 'user%'\" # SQLライククエリ")
 	fmt.Println("  moz convert text binary             # テキスト→バイナリ変換")
 	fmt.Println("  moz validate binary                 # バイナリファイル検証")
 }
