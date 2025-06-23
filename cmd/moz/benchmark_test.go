@@ -17,7 +17,7 @@ func setupBenchmarkStore(b *testing.B) *kvstore.KVStore {
 // BenchmarkCMDPut measures PUT operation performance
 func BenchmarkCMDPut(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key%d", i)
@@ -32,14 +32,14 @@ func BenchmarkCMDPut(b *testing.B) {
 // BenchmarkCMDGet measures GET operation performance
 func BenchmarkCMDGet(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	// Pre-populate with test data
 	for i := 0; i < 10000; i++ {
 		key := fmt.Sprintf("key%d", i)
 		value := fmt.Sprintf("value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key%d", i%10000)
@@ -53,14 +53,14 @@ func BenchmarkCMDGet(b *testing.B) {
 // BenchmarkCMDList measures LIST operation performance
 func BenchmarkCMDList(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	// Pre-populate with test data
 	for i := 0; i < 1000; i++ {
 		key := fmt.Sprintf("key%d", i)
 		value := fmt.Sprintf("value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := store.List()
@@ -73,14 +73,14 @@ func BenchmarkCMDList(b *testing.B) {
 // BenchmarkCMDDelete measures DELETE operation performance
 func BenchmarkCMDDelete(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	// Pre-populate with test data (more than benchmark iterations)
 	for i := 0; i < b.N+1000; i++ {
 		key := fmt.Sprintf("key%d", i)
 		value := fmt.Sprintf("value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key%d", i)
@@ -94,14 +94,14 @@ func BenchmarkCMDDelete(b *testing.B) {
 // BenchmarkCMDMixedWorkload measures mixed operation performance
 func BenchmarkCMDMixedWorkload(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	// Pre-populate with initial data
 	for i := 0; i < 1000; i++ {
 		key := fmt.Sprintf("init_key%d", i)
 		value := fmt.Sprintf("init_value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		switch i % 4 {
@@ -124,14 +124,14 @@ func BenchmarkCMDMixedWorkload(b *testing.B) {
 // BenchmarkCMDLargeValue measures performance with larger values
 func BenchmarkCMDLargeValue(b *testing.B) {
 	store := setupBenchmarkStore(b)
-	
+
 	// Create a 1KB value
 	largeValue := make([]byte, 1024)
 	for i := range largeValue {
 		largeValue[i] = byte('A' + (i % 26))
 	}
 	valueStr := string(largeValue)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("large_key%d", i)
@@ -150,23 +150,23 @@ func BenchmarkCMDWithHashIndex(b *testing.B) {
 		MaxOperations:   10000,
 		CompactionRatio: 0.7,
 	}
-	
+
 	storageConfig := kvstore.StorageConfig{
 		Format:    "text",
 		TextFile:  "benchmark_hash.log",
 		IndexType: "hash",
 		IndexFile: "benchmark_hash.idx",
 	}
-	
+
 	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
-	
+
 	// Pre-populate
 	for i := 0; i < 5000; i++ {
 		key := fmt.Sprintf("idx_key%d", i)
 		value := fmt.Sprintf("idx_value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("idx_key%d", i%5000)
@@ -185,23 +185,23 @@ func BenchmarkCMDWithBTreeIndex(b *testing.B) {
 		MaxOperations:   10000,
 		CompactionRatio: 0.7,
 	}
-	
+
 	storageConfig := kvstore.StorageConfig{
 		Format:    "text",
 		TextFile:  "benchmark_btree.log",
 		IndexType: "btree",
 		IndexFile: "benchmark_btree.idx",
 	}
-	
+
 	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
-	
+
 	// Pre-populate
 	for i := 0; i < 5000; i++ {
 		key := fmt.Sprintf("btree_key%d", i)
 		value := fmt.Sprintf("btree_value%d", i)
 		store.Put(key, value)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("btree_key%d", i%5000)
