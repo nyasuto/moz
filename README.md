@@ -34,6 +34,7 @@ moz は、ファイルベース・追記型のキーバリュー型データベ�
 | **3.3** | **IndexManager統合** | ✅ 完了 | 動的インデックス選択、統合API |
 | **3.4** | **高度クエリ機能** | ✅ 完了 | 範囲検索、プレフィックス検索、ソート済みアクセス |
 | **3.5** | **CLI改善・ヘルプシステム** | ✅ 完了 | --helpフラグ、helpコマンド、包括的ガイド |
+| **4.2** | **REST API実装** | ✅ 完了 | HTTP/JSONリモートアクセス、JWT認証、Webアプリ連携 |
 
 ## **🚀 劇的な性能向上を実現**
 
@@ -69,7 +70,9 @@ moz/
 │   ├── test_performance.sh   # 性能測定テスト
 │   └── analyze_performance.sh # 性能分析
 │
-├── cmd/moz/main.go           # Go版 CLI エントリーポイント
+├── cmd/
+│   ├── moz/main.go           # Go版 CLI エントリーポイント
+│   └── moz-server/main.go    # REST API サーバー
 ├── internal/
 │   ├── kvstore/              # Go版 KVストア実装
 │   │   ├── kvstore.go       # メイン実装（自動コンパクション + インデックス統合）
@@ -78,12 +81,19 @@ moz/
 │   │   ├── reader.go        # ログファイル読み込み
 │   │   └── *_test.go       # 包括的テストスイート（97項目）
 │   │
-│   └── index/               # インデックスシステム
-│       ├── index.go         # IndexManager統合API
-│       ├── hash_index.go    # Hash Index実装（O(1)検索）
-│       ├── btree_index.go   # B-Tree Index実装（O(log n)、範囲検索）
-│       ├── no_index.go      # インデックスなし実装
-│       └── *_test.go       # インデックス専用テスト・ベンチマーク
+│   ├── index/               # インデックスシステム
+│   │   ├── index.go         # IndexManager統合API
+│   │   ├── hash_index.go    # Hash Index実装（O(1)検索）
+│   │   ├── btree_index.go   # B-Tree Index実装（O(log n)、範囲検索）
+│   │   ├── no_index.go      # インデックスなし実装
+│   │   └── *_test.go       # インデックス専用テスト・ベンチマーク
+│   │
+│   └── api/                 # REST API実装
+│       ├── server.go        # HTTPサーバー・ルーティング
+│       ├── handlers.go      # CRUD エンドポイントハンドラー
+│       ├── auth.go          # JWT・APIキー認証システム
+│       ├── types.go         # API リクエスト・レスポンス型定義
+│       └── *_test.go       # API テストスイート
 │
 ├── scripts/                  # 性能測定・比較ツール
 │   ├── performance_comparison.sh # 包括的性能比較
@@ -141,6 +151,35 @@ make go-build
 # Makefileコマンド
 make go-run ARGS="--index=btree put city Tokyo"
 make go-run ARGS="range a z"
+```
+
+### **REST API サーバー（Web連携）**
+```bash
+# サーバービルド・起動
+make go-build
+./bin/moz-server --port 8080
+
+# 認証トークン取得
+curl -X POST http://localhost:8080/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"password"}'
+
+# データ操作（JWT認証）
+export TOKEN="your-jwt-token"
+curl -X PUT http://localhost:8080/api/v1/kv/user123 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value":"alice"}'
+
+curl -X GET http://localhost:8080/api/v1/kv/user123 \
+  -H "Authorization: Bearer $TOKEN"
+
+# ヘルスチェック（認証不要）
+curl http://localhost:8080/api/v1/health
+
+# 統計情報取得
+curl -X GET http://localhost:8080/api/v1/stats \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### **シェル版（レガシー）**
@@ -209,6 +248,14 @@ Global Flags:
 - **ソート済みアクセス**: `ListSorted()` - 順序保証取得
 - **統計情報**: インデックスサイズ・メモリ使用量監視
 
+### **🌐 REST API・Web連携**
+- **RESTful設計**: HTTP/JSON標準プロトコル対応
+- **JWT認証**: セキュアなトークンベース認証システム
+- **APIキー認証**: 簡易認証方式対応
+- **CORS対応**: クロスオリジンリクエスト対応
+- **エラーハンドリング**: 構造化されたエラーレスポンス
+- **メタデータ**: 実行時間・タイムスタンプ付きレスポンス
+
 ### **⚙️ 自動コンパクション**
 - **ファイルサイズ閾値**: 1MB超過で自動実行
 - **操作数閾値**: 1000操作で自動実行  
@@ -244,6 +291,8 @@ B-Tree検索:    8,460,237 ops/sec
 - **品質保証**: 自動化されたCI/CD・セキュリティスキャン
 - **監視機能**: 構造化ログ・メトリクス出力
 - **ユーザビリティ**: 包括的ヘルプシステム・直感的CLI操作
+- **Web連携**: REST API・Webアプリケーション統合対応
+- **認証・認可**: JWT・APIキーによるセキュアアクセス
 
 ## **🔄 開発ワークフロー**
 
@@ -303,15 +352,15 @@ refactor/X-description       # リファクタリング
 
 ## **🚀 今後の開発ロードマップ**
 
-### **Phase 4: エンタープライズ機能（構想中）**
+### **Phase 4: エンタープライズ機能（進行中）**
 
-| フェーズ | 機能 | 優先度 | 説明 |
-|---------|------|--------|------|
-| **4.1** | **分散対応** | 高 | レプリケーション、シャーディング |
-| **4.2** | **REST API** | 高 | HTTP/JSONによるリモートアクセス |
-| **4.3** | **監視・メトリクス** | 中 | OpenTelemetry対応 |
-| **4.4** | **バックアップ・復元** | 中 | Point-in-time recovery |
-| **4.5** | **クラスタリング** | 低 | 分散コンセンサス・一貫性保証 |
+| フェーズ | 機能 | 状況 | 説明 |
+|---------|------|------|------|
+| **4.1** | **分散対応** | 構想中 | レプリケーション、シャーディング |
+| **4.2** | **REST API** | ✅ 完了 | HTTP/JSONリモートアクセス、JWT認証 |
+| **4.3** | **監視・メトリクス** | 構想中 | OpenTelemetry対応 |
+| **4.4** | **バックアップ・復元** | 構想中 | Point-in-time recovery |
+| **4.5** | **クラスタリング** | 構想中 | 分散コンセンサス・一貫性保証 |
 
 ## **🤖 AI開発支援向け設計**
 
