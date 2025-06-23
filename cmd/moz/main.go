@@ -13,7 +13,14 @@ import (
 func main() {
 	var format = flag.String("format", "text", "Storage format: text or binary")
 	var indexType = flag.String("index", "none", "Index type: hash, btree, or none")
+	var help = flag.Bool("help", false, "Show help message")
 	flag.Parse()
+
+	// Handle help flag
+	if *help {
+		printUsage()
+		os.Exit(0)
+	}
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -256,6 +263,9 @@ func main() {
 		}
 		fmt.Println("✅ Index validation passed")
 
+	case "help":
+		printUsage()
+
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		printUsage()
@@ -268,23 +278,36 @@ func printUsage() {
 	fmt.Println("")
 	fmt.Println("Global Flags:")
 	fmt.Println("  --format <text|binary>  - ストレージフォーマット指定 (default: text)")
+	fmt.Println("  --index <hash|btree|none> - インデックス方式指定 (default: none)")
+	fmt.Println("  --help                  - ヘルプメッセージ表示")
 	fmt.Println("")
 	fmt.Println("基本操作:")
 	fmt.Println("  moz put <key> <value>  - キー・バリューの保存")
 	fmt.Println("  moz get <key>          - キーの値を取得")
 	fmt.Println("  moz del <key>          - キーを削除")
 	fmt.Println("  moz list               - 全キー・バリューを表示")
+	fmt.Println("  moz help               - ヘルプメッセージ表示")
+	fmt.Println("")
+	fmt.Println("高速検索操作:")
+	fmt.Println("  moz range <start> <end> - 範囲検索")
+	fmt.Println("  moz prefix <prefix>     - プレフィックス検索")
+	fmt.Println("  moz sorted              - ソート済み一覧")
 	fmt.Println("")
 	fmt.Println("管理操作:")
 	fmt.Println("  moz compact            - ストレージ最適化")
 	fmt.Println("  moz stats              - ストレージ統計表示")
+	fmt.Println("  moz rebuild-index      - インデックス再構築")
+	fmt.Println("  moz validate-index     - インデックス検証")
 	fmt.Println("")
 	fmt.Println("フォーマット操作:")
 	fmt.Println("  moz convert <from> <to> - フォーマット変換 (text ↔ binary)")
 	fmt.Println("  moz validate <format>   - ファイル整合性検証")
 	fmt.Println("")
 	fmt.Println("Examples:")
-	fmt.Println("  moz --format=binary put key value  # バイナリ形式で保存")
+	fmt.Println("  moz --help                          # ヘルプ表示")
+	fmt.Println("  moz --format=binary put key value   # バイナリ形式で保存")
+	fmt.Println("  moz --index=hash put user alice     # Hash Index使用")
+	fmt.Println("  moz --index=btree range a z         # B-Tree Index範囲検索")
 	fmt.Println("  moz convert text binary             # テキスト→バイナリ変換")
 	fmt.Println("  moz validate binary                 # バイナリファイル検証")
 }
