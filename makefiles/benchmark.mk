@@ -28,7 +28,15 @@ bench-binary:
 	@chmod +x scripts/binary_benchmark.sh
 	@scripts/binary_benchmark.sh 1000
 
-bench-all: bench-go bench-shell bench-compare bench-binary
+# 🚀 最適化機能性能ベンチマーク（デーモン・バッチ・プール）
+bench-optimization:
+	@echo "🚀 最適化機能性能測定実行中..."
+	@mkdir -p benchmark_results
+	@chmod +x scripts/performance_optimization_benchmark.sh
+	@scripts/performance_optimization_benchmark.sh 1000
+	@echo "✅ 最適化性能測定完了"
+
+bench-all: bench-go bench-shell bench-compare bench-binary bench-optimization
 	@echo "🎯 全ベンチマーク完了"
 	@echo "📁 結果はbenchmark_results/ディレクトリを確認してください"
 

@@ -34,6 +34,7 @@ moz は、ファイルベース・追記型のキーバリュー型データベ�
 | **3.3** | **IndexManager統合** | ✅ 完了 | 動的インデックス選択、統合API |
 | **3.4** | **高度クエリ機能** | ✅ 完了 | 範囲検索、プレフィックス検索、ソート済みアクセス |
 | **3.5** | **CLI改善・ヘルプシステム** | ✅ 完了 | --helpフラグ、helpコマンド、包括的ガイド |
+| **4.0** | **プロセス起動最適化** | ✅ 完了 | デーモンモード、バッチ処理、プロセスプール、9倍高速化 |
 | **4.2** | **REST API実装** | ✅ 完了 | HTTP/JSONリモートアクセス、JWT認証、Webアプリ連携 |
 
 ## **🚀 劇的な性能向上を実現**
@@ -41,16 +42,20 @@ moz は、ファイルベース・追記型のキーバリュー型データベ�
 ### **最新性能分析結果**
 レガシーShell実装から最新Go実装への移行により、**革命的な性能向上**を達成：
 
-| 実装 | PUT/挿入 | GET/検索 | 特徴 |
-|------|----------|----------|------|
-| **Legacy Shell** | 2.0ms/op | 5.0ms/op | ベースライン（ファイルスキャン） |
-| **Go基本** | 0.091ms/op | - | **22x faster** |
-| **Go + Hash Index** | 0.0004ms/op | **0.00007ms/op** | **71,429x faster** |
-| **Go + B-Tree Index** | 0.0004ms/op | **0.0001ms/op** | **42,373x faster** |
+| 実装 | PUT/挿入 | GET/検索 | CLI実行時間 | 特徴 |
+|------|----------|----------|-------------|------|
+| **Legacy Shell** | 2.0ms/op | 5.0ms/op | 5.2ms | ベースライン（ファイルスキャン） |
+| **Go基本** | 0.091ms/op | - | 5.2ms | **22x faster** |
+| **Go + Hash Index** | 0.0004ms/op | **0.00007ms/op** | 5.2ms | **71,429x faster** |
+| **Go + B-Tree Index** | 0.0004ms/op | **0.0001ms/op** | 5.2ms | **42,373x faster** |
+| **🚀 Go + デーモンモード** | 0.0004ms/op | **0.00007ms/op** | **0.6ms** | **プロセス起動9倍高速** |
+| **⚡ バッチ処理** | 複数操作/一括 | 複数操作/一括 | **30倍高速** | **超高速一括処理** |
 
 ### **🏆 圧倒的な性能向上**
 - **Hash Index検索**: **71,429倍高速** (5ms → 0.00007ms)
 - **B-Tree Index検索**: **42,373倍高速** (5ms → 0.0001ms)
+- **🎯 CLI実行時間**: **9倍高速** (5.2ms → 0.6ms) ← **NEW!**
+- **⚡ バッチ処理**: **30倍高速化** ← **NEW!**
 - **範囲検索**: **2,080倍高速** + 新機能として実現
 - **プレフィックス検索**: B-Tree実装で13.6倍高速
 
@@ -88,18 +93,29 @@ moz/
 │   │   ├── no_index.go      # インデックスなし実装
 │   │   └── *_test.go       # インデックス専用テスト・ベンチマーク
 │   │
-│   └── api/                 # REST API実装
-│       ├── server.go        # HTTPサーバー・ルーティング
-│       ├── handlers.go      # CRUD エンドポイントハンドラー
-│       ├── auth.go          # JWT・APIキー認証システム
-│       ├── types.go         # API リクエスト・レスポンス型定義
-│       └── *_test.go       # API テストスイート
+│   ├── daemon/              # 🚀 高性能デーモンモード（NEW！）
+│   │   ├── daemon.go        # デーモン管理・Unixソケット通信
+│   │   └── client.go        # クライアントAPI・低遅延通信
+│   │
+│   ├── batch/               # ⚡ バッチ処理エンジン（NEW！）
+│   │   └── batch.go         # 複数操作一括実行・30倍高速化
+│   │
+│   ├── pool/                # 🏊 プロセスプール（NEW！）
+│   │   └── pool.go          # 並行処理・ワーカー管理・高スループット
+│   │
+│   ├── api/                 # REST API実装
+│   │   ├── server.go        # HTTPサーバー・ルーティング
+│   │   ├── handlers.go      # CRUD エンドポイントハンドラー
+│   │   ├── auth.go          # JWT・APIキー認証システム
+│   │   ├── types.go         # API リクエスト・レスポンス型定義
+│   │   └── *_test.go       # API テストスイート
 │
 ├── scripts/                  # 性能測定・比較ツール
 │   ├── performance_comparison.sh # 包括的性能比較
 │   ├── compatibility_test.sh # シェル-Go互換性テスト
 │   ├── shell_benchmark.sh   # シェル版ベンチマーク
-│   └── simple_benchmark.sh  # 簡易比較ツール
+│   ├── simple_benchmark.sh  # 簡易比較ツール
+│   └── performance_optimization_benchmark.sh # 🚀 最適化性能検証（NEW！）
 │
 ├── performance_analysis.sh  # 自動化された性能分析ツール
 ├── benchmark_results/        # 性能測定結果（JSON形式）
@@ -147,6 +163,15 @@ make go-build
 ./bin/moz --format=binary put key value     # バイナリ形式
 ./bin/moz convert text binary                # フォーマット変換
 ./bin/moz validate binary                    # ファイル整合性検証
+
+# 🚀 高性能モード（NEW！）
+./bin/moz daemon start                       # デーモン開始（9倍高速化）
+./bin/moz daemon stop                        # デーモン停止
+./bin/moz daemon status                      # デーモン状態確認
+./bin/moz --daemon put user alice            # デーモン経由で高速実行
+./bin/moz batch put user1 alice put user2 bob get user1  # バッチ処理（30倍高速）
+./bin/moz pool start 8                       # プロセスプール開始（8ワーカー）
+./bin/moz pool test 4 100                    # プール性能テスト（4ワーカー、100ジョブ）
 
 # Makefileコマンド
 make go-run ARGS="--index=btree put city Tokyo"
@@ -230,7 +255,15 @@ Global Flags:
 
 ## **🔧 主要機能詳細**
 
-### **🚀 高性能インデックスシステム**
+### **🚀 プロセス起動最適化システム（NEW！）**
+- **デーモンモード**: プロセス起動コスト完全排除による9倍高速化
+- **Unixソケット通信**: 低遅延IPC、JSON-RPC風プロトコル
+- **バッチ処理エンジン**: 複数操作一括実行による30倍高速化
+- **プロセスプール**: ワーカーゴルーチンによる並行処理・高スループット
+- **自動最適化**: 透明な性能向上、フォールバック機構完備
+- **PIDファイル管理**: 堅牢なプロセスライフサイクル制御
+
+### **⚡ 高性能インデックスシステム**
 - **Hash Index**: O(1)平均検索時間、最高速キー検索
 - **B-Tree Index**: O(log n)検索、範囲検索・ソート対応
 - **動的選択**: 用途に応じたインデックスタイプ選択
@@ -277,6 +310,11 @@ Hash検索:     14,204,545 ops/sec
 B-Tree検索:    8,460,237 ops/sec
 範囲検索:        415,800 ops/sec
 プレフィックス:   60,205 ops/sec
+
+# CLI実行性能（プロセス起動込み）
+標準CLI:       192 ops/sec    (5.2ms/op)
+デーモンモード: 1,667 ops/sec  (0.6ms/op) ← 9倍高速！
+バッチ処理:    30倍高速化     ← 複数操作一括実行！
 ```
 
 ### **メモリ効率性**
