@@ -1,14 +1,25 @@
 package query
 
 import (
+	"os"
 	"testing"
 
 	"github.com/nyasuto/moz/internal/kvstore"
 )
 
 func TestExecutor_SelectAll(t *testing.T) {
-	// Create test store
-	store := kvstore.New()
+	// Create test store with temporary file
+	compactionConfig := kvstore.CompactionConfig{Enabled: false}
+	storageConfig := kvstore.StorageConfig{
+		Format:   "text",
+		TextFile: "test_query_all.log",
+	}
+	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
+	defer func() {
+		// Clean up test file
+		os.Remove("test_query_all.log")
+	}()
+
 	store.Put("user1", "Alice")
 	store.Put("user2", "Bob")
 	store.Put("admin1", "Charlie Admin")
@@ -35,8 +46,18 @@ func TestExecutor_SelectAll(t *testing.T) {
 }
 
 func TestExecutor_WhereConditions(t *testing.T) {
-	// Create test store
-	store := kvstore.New()
+	// Create test store with temporary file
+	compactionConfig := kvstore.CompactionConfig{Enabled: false}
+	storageConfig := kvstore.StorageConfig{
+		Format:   "text",
+		TextFile: "test_query_where.log",
+	}
+	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
+	defer func() {
+		// Clean up test file
+		os.Remove("test_query_where.log")
+	}()
+
 	store.Put("user1", "Alice")
 	store.Put("user2", "Bob")
 	store.Put("admin1", "Charlie Admin")
@@ -88,8 +109,18 @@ func TestExecutor_WhereConditions(t *testing.T) {
 }
 
 func TestExecutor_CountFunction(t *testing.T) {
-	// Create test store
-	store := kvstore.New()
+	// Create test store with temporary file
+	compactionConfig := kvstore.CompactionConfig{Enabled: false}
+	storageConfig := kvstore.StorageConfig{
+		Format:   "text",
+		TextFile: "test_query_count.log",
+	}
+	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
+	defer func() {
+		// Clean up test file
+		os.Remove("test_query_count.log")
+	}()
+
 	store.Put("user1", "Alice Admin")
 	store.Put("user2", "Bob User")
 	store.Put("admin1", "Charlie Admin")
@@ -115,8 +146,18 @@ func TestExecutor_CountFunction(t *testing.T) {
 }
 
 func TestExecutor_ComplexConditions(t *testing.T) {
-	// Create test store
-	store := kvstore.New()
+	// Create test store with temporary file
+	compactionConfig := kvstore.CompactionConfig{Enabled: false}
+	storageConfig := kvstore.StorageConfig{
+		Format:   "text",
+		TextFile: "test_query_complex.log",
+	}
+	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
+	defer func() {
+		// Clean up test file
+		os.Remove("test_query_complex.log")
+	}()
+
 	store.Put("user1", "Alice Admin")
 	store.Put("user2", "Bob User")
 	store.Put("admin1", "Charlie Admin")
