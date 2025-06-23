@@ -47,6 +47,7 @@ help: ## 📚 利用可能なコマンドを表示
 	@echo "  make bench-go     - Go実装ベンチマーク"
 	@echo "  make bench-shell  - シェル実装ベンチマーク"
 	@echo "  make bench-compare - 性能比較"
+	@echo "  make bench-optimization - 🚀 最適化性能検証（デーモン・バッチ・プール）"
 	@echo "  make bench-all    - 全ベンチマーク実行"
 	@echo "  make bench-quick  - クイック性能テスト"
 	@echo ""
@@ -73,5 +74,5 @@ pr-ready: quality test ## 🚀 プルリクエスト準備（品質チェック 
 .PHONY: help pr-ready install dev build clean test test-cov lint format type-check quality quality-fix quality-full
 .PHONY: go-build go-test go-run go-clean go-tools-install go-install go-mod-tidy go-lint go-fmt go-race go-bench go-security go-dep-check
 .PHONY: server test-api test-api-full
-.PHONY: bench-go bench-shell bench-compare bench-binary bench-all bench-quick
+.PHONY: bench-go bench-shell bench-compare bench-binary bench-optimization bench-all bench-quick
 .PHONY: git-hooks env-info
