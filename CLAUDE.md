@@ -450,6 +450,100 @@ Each partition contains:
 - `moz_p{id}.bin` - Binary format file (if enabled)  
 - `moz_p{id}.idx` - Index file (if enabled)
 
+## GitHub Wiki Management
+
+### 📝 Wiki Update Workflow
+
+**GitHub Wiki は専用リポジトリとして管理** - Wiki更新は以下の標準的手順に従う:
+
+#### Standard Wiki Update Process
+
+1. **Wiki Repository Clone**
+   ```bash
+   # Wiki は独立したGitリポジトリとして管理される
+   git clone https://github.com/owner/repo.wiki.git /tmp/repo-wiki
+   ```
+
+2. **Content Creation/Update**
+   ```bash
+   # Wikiページをマークダウンファイルとして作成・編集
+   # ファイル名: Page-Title.md (スペースはハイフンに変換)
+   vim /tmp/repo-wiki/New-Wiki-Page.md
+   ```
+
+3. **Git Operations**
+   ```bash
+   # 通常のGit操作でWikiを更新
+   git -C /tmp/repo-wiki add New-Wiki-Page.md
+   git -C /tmp/repo-wiki commit -m "feat: 新しいWikiページを追加"
+   git -C /tmp/repo-wiki push origin master
+   ```
+
+#### Wiki Naming Conventions
+
+- **ファイル名**: `Page-Title.md` (スペースは `-` で置換)
+- **URL**: `https://github.com/owner/repo/wiki/Page-Title`
+- **Home Page**: `Home.md` (リポジトリWikiのトップページ)
+
+#### Wiki Content Standards
+
+1. **構造化マークダウン**
+   - 明確な見出し階層 (`#`, `##`, `###`)
+   - 適切な表・リスト・コードブロック使用
+   - 内部リンク: `[[Other-Wiki-Page]]`
+
+2. **メタデータ情報**
+   ```markdown
+   **📝 作成者**: Claude Code
+   **📅 作成日時**: YYYY年MM月DD日
+   **🔍 分析手法**: 実測ベンチマーク・プロファイリング
+   **📊 データ信頼性**: 複数回測定による平均値・再現性確認済み
+   ```
+
+3. **日本語コンテンツ標準**
+   - 技術文書は日本語で記述
+   - 重要な用語は **太字** で強調
+   - 絵文字による視覚的区分 (📊, 🚀, ⚡, 🎯 等)
+
+#### Common Wiki Operations
+
+```bash
+# 新規Wiki作成
+git clone https://github.com/owner/repo.wiki.git /tmp/repo-wiki
+echo "# New Page Content" > /tmp/repo-wiki/New-Page.md
+git -C /tmp/repo-wiki add New-Page.md
+git -C /tmp/repo-wiki commit -m "feat: 新しいページ追加"
+git -C /tmp/repo-wiki push origin master
+
+# 既存Wiki更新
+git -C /tmp/repo-wiki pull origin master
+# Edit files...
+git -C /tmp/repo-wiki add .
+git -C /tmp/repo-wiki commit -m "docs: ページ内容更新"
+git -C /tmp/repo-wiki push origin master
+
+# Wiki削除
+git -C /tmp/repo-wiki rm Old-Page.md
+git -C /tmp/repo-wiki commit -m "docs: 不要ページ削除"
+git -C /tmp/repo-wiki push origin master
+```
+
+#### Wiki Security Notes
+
+- **Public Access**: GitHub Wikiは通常パブリックアクセス
+- **Edit Permissions**: リポジトリ書き込み権限が必要
+- **Sensitive Information**: 秘密情報・APIキー等は記載禁止
+- **Archive Policy**: 重要文書は定期的にローカルバックアップ
+
+#### Wiki vs Documentation Strategy
+
+| Content Type | Location | Purpose |
+|--------------|----------|---------|
+| **API Reference** | `/docs` in main repo | コード同期・バージョン管理 |
+| **User Guides** | GitHub Wiki | 使用方法・チュートリアル |
+| **Analysis Reports** | GitHub Wiki | 性能分析・調査結果 |
+| **Development Process** | `CLAUDE.md` | 開発ルール・手順 |
+
 ## Security Considerations
 
 ### Secrets Management
