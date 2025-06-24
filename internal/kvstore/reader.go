@@ -17,12 +17,22 @@ type LogEntry struct {
 // LogReader provides functionality to read and parse moz.log files
 type LogReader struct {
 	filename string
+	pools    *MemoryPools
 }
 
 // NewLogReader creates a new LogReader for the specified file
 func NewLogReader(filename string) *LogReader {
 	return &LogReader{
 		filename: filename,
+		pools:    NewMemoryPools(DefaultMemoryPoolConfig()),
+	}
+}
+
+// NewLogReaderWithPools creates a new LogReader with existing memory pools
+func NewLogReaderWithPools(filename string, pools *MemoryPools) *LogReader {
+	return &LogReader{
+		filename: filename,
+		pools:    pools,
 	}
 }
 
@@ -63,8 +73,27 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 		}
 	}()
 
-	var entries []LogEntry
+	// Pre-allocate slice with estimated capacity
+	fileInfo, _ := file.Stat()
+	estimatedEntries := int(fileInfo.Size() / 50) // Estimate ~50 bytes per entry
+	if estimatedEntries < 100 {
+		estimatedEntries = 100
+	}
+
+	entries := make([]LogEntry, 0, estimatedEntries)
 	scanner := bufio.NewScanner(file)
+
+	// Use memory pool for scan buffer optimization
+	if lr.pools != nil {
+		scanBuffer := lr.pools.GetBuffer()
+		defer lr.pools.PutBuffer(scanBuffer)
+
+		// Resize buffer if needed for scanner
+		if cap(scanBuffer) < 64*1024 {
+			scanBuffer = make([]byte, 0, 64*1024) // 64KB scan buffer
+		}
+		scanner.Buffer(scanBuffer, cap(scanBuffer))
+	}
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -72,10 +101,23 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 			continue
 		}
 
-		entry, err := lr.parseLine(line)
-		if err != nil {
-			// Skip invalid lines instead of failing
-			continue
+		// Use memory pool for log entries if available
+		var entry LogEntry
+		if lr.pools != nil {
+			pooledEntry := lr.pools.GetLogEntry()
+			entryResult, err := lr.parseLineToPooledEntry(line, pooledEntry)
+			if err != nil {
+				lr.pools.PutLogEntry(pooledEntry)
+				continue
+			}
+			entry = *entryResult
+			lr.pools.PutLogEntry(pooledEntry)
+		} else {
+			entryResult, err := lr.parseLine(line)
+			if err != nil {
+				continue
+			}
+			entry = entryResult
 		}
 
 		entries = append(entries, entry)
@@ -90,8 +132,21 @@ func (lr *LogReader) ReadAllEntries() ([]LogEntry, error) {
 
 // parseLogFile parses the log file and builds the current state
 func (lr *LogReader) parseLogFile(reader io.Reader) (map[string]string, error) {
-	data := make(map[string]string)
+	// Pre-allocate map with estimated capacity
+	data := make(map[string]string, 1000) // Start with reasonable default
 	scanner := bufio.NewScanner(reader)
+
+	// Use memory pool for scan buffer optimization
+	if lr.pools != nil {
+		scanBuffer := lr.pools.GetBuffer()
+		defer lr.pools.PutBuffer(scanBuffer)
+
+		// Resize buffer if needed for scanner
+		if cap(scanBuffer) < 64*1024 {
+			scanBuffer = make([]byte, 0, 64*1024) // 64KB scan buffer
+		}
+		scanner.Buffer(scanBuffer, cap(scanBuffer))
+	}
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -118,6 +173,45 @@ func (lr *LogReader) parseLogFile(reader io.Reader) (map[string]string, error) {
 	}
 
 	return data, nil
+}
+
+// parseLineToPooledEntry parses a single line into a pooled LogEntry
+func (lr *LogReader) parseLineToPooledEntry(line string, entry *LogEntry) (*LogEntry, error) {
+	// Try TAB-delimited format first (legacy compatibility)
+	if strings.Contains(line, "\t") {
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid TAB-delimited format: %s", line)
+		}
+		entry.Key = parts[0]
+		entry.Value = parts[1]
+		return entry, nil
+	}
+
+	// Try space-delimited format (PUT key value or DEL key)
+	parts := strings.SplitN(line, " ", 3)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid line format: %s", line)
+	}
+
+	operation := parts[0]
+	key := parts[1]
+
+	switch operation {
+	case "PUT":
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid PUT format: %s", line)
+		}
+		entry.Key = key
+		entry.Value = parts[2]
+		return entry, nil
+	case "DEL":
+		entry.Key = key
+		entry.Value = "__DELETED__"
+		return entry, nil
+	default:
+		return nil, fmt.Errorf("unknown operation: %s", operation)
+	}
 }
 
 // parseLine parses a single line from the log file

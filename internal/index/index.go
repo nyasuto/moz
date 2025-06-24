@@ -23,6 +23,12 @@ type IndexEntry struct {
 	Deleted   bool   // Whether this entry is a deletion marker
 }
 
+// IndexEntryPool interface for memory pooling IndexEntry objects
+type IndexEntryPool interface {
+	GetIndexEntry() *IndexEntry
+	PutIndexEntry(entry *IndexEntry)
+}
+
 // Index interface defines the contract for all index implementations
 type Index interface {
 	// Basic operations
@@ -64,14 +70,27 @@ type IndexManager struct {
 
 // NewIndexManager creates a new index manager with the specified type
 func NewIndexManager(indexType IndexType) (*IndexManager, error) {
+	return NewIndexManagerWithPool(indexType, nil)
+}
+
+// NewIndexManagerWithPool creates a new index manager with optional memory pool
+func NewIndexManagerWithPool(indexType IndexType, entryPool IndexEntryPool) (*IndexManager, error) {
 	var idx Index
 	var err error
 
 	switch indexType {
 	case IndexTypeHash:
-		idx, err = NewHashIndex(DefaultHashIndexConfig())
+		if entryPool != nil {
+			idx, err = NewHashIndexWithPool(DefaultHashIndexConfig(), entryPool)
+		} else {
+			idx, err = NewHashIndex(DefaultHashIndexConfig())
+		}
 	case IndexTypeBTree:
-		idx, err = NewBTreeIndex(DefaultBTreeIndexConfig())
+		if entryPool != nil {
+			idx, err = NewBTreeIndexWithPool(DefaultBTreeIndexConfig(), entryPool)
+		} else {
+			idx, err = NewBTreeIndex(DefaultBTreeIndexConfig())
+		}
 	case IndexTypeNone:
 		idx = NewNoIndex()
 	default:
