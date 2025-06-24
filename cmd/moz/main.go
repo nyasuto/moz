@@ -23,6 +23,7 @@ func main() {
 	var help = flag.Bool("help", false, "Show help message")
 	var useDaemon = flag.Bool("daemon", false, "Use daemon mode for high performance")
 	var forceLocal = flag.Bool("local", false, "Force local execution (bypass daemon)")
+	var partitions = flag.Int("partitions", 1, "Number of partitions for parallel writes (1-16)")
 	flag.Parse()
 
 	// Handle help flag
@@ -60,23 +61,13 @@ func main() {
 		// If daemon execution fails, fall back to local execution
 	}
 
-	// Create store with specified format and index
-	storageConfig := kvstore.StorageConfig{
-		Format:     *format,
-		TextFile:   "moz.log",
-		BinaryFile: "moz.bin",
-		IndexType:  *indexType,
-		IndexFile:  "moz.idx",
-	}
+	// Create store with partition support
+	store := createStoreOrPartitioned(*format, *indexType, *partitions)
 
-	compactionConfig := kvstore.CompactionConfig{
-		Enabled:         true,
-		MaxFileSize:     1024 * 1024, // 1MB
-		MaxOperations:   1000,
-		CompactionRatio: 0.5,
+	// Show partition info if using partitions
+	if *partitions > 1 {
+		fmt.Printf("🔄 Using %d partitions for parallel processing\n", *partitions)
 	}
-
-	store := kvstore.NewWithConfig(compactionConfig, storageConfig)
 
 	switch command {
 	case "put":
@@ -88,7 +79,11 @@ func main() {
 		if err := store.Put(key, value); err != nil {
 			log.Fatalf("Error putting key-value: %v", err)
 		}
-		fmt.Printf("✅ Stored: %s = %s\n", key, value)
+		if *partitions > 1 {
+			fmt.Printf("✅ Stored (partition): %s = %s\n", key, value)
+		} else {
+			fmt.Printf("✅ Stored: %s = %s\n", key, value)
+		}
 
 	case "get":
 		if len(args) != 2 {
@@ -138,35 +133,44 @@ func main() {
 		fmt.Println("✅ Store compacted")
 
 	case "stats":
-		stats, err := store.GetCompactionStats()
-		if err != nil {
-			log.Fatalf("Error getting compaction stats: %v", err)
-		}
-
-		indexStats, err := store.GetIndexStats()
-		if err != nil {
-			log.Fatalf("Error getting index stats: %v", err)
-		}
-
 		fmt.Printf("📊 Storage Statistics:\n")
-		fmt.Printf("  Format: %s\n", storageConfig.Format)
-		fmt.Printf("  Index: %s\n", storageConfig.IndexType)
-		fmt.Printf("  Auto-compaction: %v\n", stats.Enabled)
-		fmt.Printf("  Operations since last compaction: %d\n", stats.OperationCount)
-		fmt.Printf("  File size: %d bytes\n", stats.FileSize)
-		fmt.Printf("  Deleted entries ratio: %.2f%%\n", stats.DeletedRatio*100)
-		fmt.Printf("  Operations until next compaction: %d\n", stats.NextCompactionAt)
-		if stats.LastCompaction > 0 {
-			fmt.Printf("  Last compaction: %v\n", time.Unix(stats.LastCompaction, 0).Format("2006-01-02 15:04:05"))
-		} else {
-			fmt.Printf("  Last compaction: Never\n")
-		}
 
-		fmt.Printf("\n🔍 Index Statistics:\n")
-		fmt.Printf("  Index enabled: %v\n", indexStats["enabled"])
-		fmt.Printf("  Index type: %s\n", indexStats["type"])
-		fmt.Printf("  Index size: %d entries\n", indexStats["size"])
-		fmt.Printf("  Index memory usage: %d bytes\n", indexStats["memory_usage"])
+		// Try to get extended stats if available
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			stats, err := extStore.GetCompactionStats()
+			if err != nil {
+				log.Fatalf("Error getting compaction stats: %v", err)
+			}
+
+			indexStats, err := extStore.GetIndexStats()
+			if err != nil {
+				log.Fatalf("Error getting index stats: %v", err)
+			}
+
+			fmt.Printf("  Format: %s\n", *format)
+			fmt.Printf("  Index: %s\n", *indexType)
+			fmt.Printf("  Auto-compaction: %v\n", stats.Enabled)
+			fmt.Printf("  Operations since last compaction: %d\n", stats.OperationCount)
+			fmt.Printf("  File size: %d bytes\n", stats.FileSize)
+			fmt.Printf("  Deleted entries ratio: %.2f%%\n", stats.DeletedRatio*100)
+			fmt.Printf("  Operations until next compaction: %d\n", stats.NextCompactionAt)
+			if stats.LastCompaction > 0 {
+				fmt.Printf("  Last compaction: %v\n", time.Unix(stats.LastCompaction, 0).Format("2006-01-02 15:04:05"))
+			} else {
+				fmt.Printf("  Last compaction: Never\n")
+			}
+
+			fmt.Printf("\n🔍 Index Statistics:\n")
+			fmt.Printf("  Index enabled: %v\n", indexStats["enabled"])
+			fmt.Printf("  Index type: %s\n", indexStats["type"])
+			fmt.Printf("  Index size: %d entries\n", indexStats["size"])
+			fmt.Printf("  Index memory usage: %d bytes\n", indexStats["memory_usage"])
+		} else {
+			// For partitioned stores, show basic info
+			fmt.Printf("  Format: %s\n", *format)
+			fmt.Printf("  Partitions: %d\n", *partitions)
+			fmt.Printf("  Basic statistics available\n")
+		}
 
 	case "convert":
 		if len(args) != 3 {
@@ -226,18 +230,22 @@ func main() {
 		}
 		startKey, endKey := args[1], args[2]
 
-		results, err := store.GetRange(startKey, endKey)
-		if err != nil {
-			log.Fatalf("Error performing range query: %v", err)
-		}
-
-		if len(results) == 0 {
-			fmt.Printf("No keys found in range [%s, %s]\n", startKey, endKey)
-		} else {
-			fmt.Printf("🔍 Range query [%s, %s] (%d results):\n", startKey, endKey, len(results))
-			for key, value := range results {
-				fmt.Printf("  %s: %s\n", key, value)
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			results, err := extStore.GetRange(startKey, endKey)
+			if err != nil {
+				log.Fatalf("Error performing range query: %v", err)
 			}
+
+			if len(results) == 0 {
+				fmt.Printf("No keys found in range [%s, %s]\n", startKey, endKey)
+			} else {
+				fmt.Printf("🔍 Range query [%s, %s] (%d results):\n", startKey, endKey, len(results))
+				for key, value := range results {
+					fmt.Printf("  %s: %s\n", key, value)
+				}
+			}
+		} else {
+			fmt.Println("❌ Range queries not supported with partitioned stores")
 		}
 
 	case "prefix":
@@ -247,30 +255,51 @@ func main() {
 		}
 		prefix := args[1]
 
-		results, err := store.PrefixSearch(prefix)
-		if err != nil {
-			log.Fatalf("Error performing prefix search: %v", err)
-		}
-
-		if len(results) == 0 {
-			fmt.Printf("No keys found with prefix '%s'\n", prefix)
-		} else {
-			fmt.Printf("🔍 Prefix search '%s' (%d results):\n", prefix, len(results))
-			for key, value := range results {
-				fmt.Printf("  %s: %s\n", key, value)
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			results, err := extStore.PrefixSearch(prefix)
+			if err != nil {
+				log.Fatalf("Error performing prefix search: %v", err)
 			}
+
+			if len(results) == 0 {
+				fmt.Printf("No keys found with prefix '%s'\n", prefix)
+			} else {
+				fmt.Printf("🔍 Prefix search '%s' (%d results):\n", prefix, len(results))
+				for key, value := range results {
+					fmt.Printf("  %s: %s\n", key, value)
+				}
+			}
+		} else {
+			fmt.Println("❌ Prefix search not supported with partitioned stores")
 		}
 
 	case "sorted":
-		keys, err := store.ListSorted()
-		if err != nil {
-			log.Fatalf("Error getting sorted keys: %v", err)
-		}
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			keys, err := extStore.ListSorted()
+			if err != nil {
+				log.Fatalf("Error getting sorted keys: %v", err)
+			}
 
-		if len(keys) == 0 {
-			fmt.Println("No keys found")
+			if len(keys) == 0 {
+				fmt.Println("No keys found")
+			} else {
+				fmt.Printf("📋 Sorted keys (%d total):\n", len(keys))
+				for _, key := range keys {
+					value, err := store.Get(key)
+					if err != nil {
+						fmt.Printf("  %s: <error: %v>\n", key, err)
+					} else {
+						fmt.Printf("  %s: %s\n", key, value)
+					}
+				}
+			}
 		} else {
-			fmt.Printf("📋 Sorted keys (%d total):\n", len(keys))
+			// Fall back to regular list for partitioned stores
+			keys, err := store.List()
+			if err != nil {
+				log.Fatalf("Error listing keys: %v", err)
+			}
+			fmt.Printf("📋 Keys (%d total):\n", len(keys))
 			for _, key := range keys {
 				value, err := store.Get(key)
 				if err != nil {
@@ -282,16 +311,24 @@ func main() {
 		}
 
 	case "rebuild-index":
-		if err := store.RebuildIndex(); err != nil {
-			log.Fatalf("Error rebuilding index: %v", err)
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			if err := extStore.RebuildIndex(); err != nil {
+				log.Fatalf("Error rebuilding index: %v", err)
+			}
+			fmt.Println("✅ Index rebuilt successfully")
+		} else {
+			fmt.Println("❌ Index operations not supported with partitioned stores")
 		}
-		fmt.Println("✅ Index rebuilt successfully")
 
 	case "validate-index":
-		if err := store.ValidateIndex(); err != nil {
-			log.Fatalf("Index validation failed: %v", err)
+		if extStore, ok := store.(ExtendedStoreInterface); ok {
+			if err := extStore.ValidateIndex(); err != nil {
+				log.Fatalf("Index validation failed: %v", err)
+			}
+			fmt.Println("✅ Index validation passed")
+		} else {
+			fmt.Println("❌ Index operations not supported with partitioned stores")
 		}
-		fmt.Println("✅ Index validation passed")
 
 	case "query":
 		if len(args) < 2 {
@@ -313,39 +350,43 @@ func main() {
 			os.Exit(1)
 		}
 
-		executor := query.NewExecutor(store)
-		result := executor.Execute(stmt)
+		if kvStore, ok := store.(*kvstore.KVStore); ok {
+			executor := query.NewExecutor(kvStore)
+			result := executor.Execute(stmt)
 
-		if result.Error != nil {
-			log.Fatalf("Query execution error: %v", result.Error)
-		}
+			if result.Error != nil {
+				log.Fatalf("Query execution error: %v", result.Error)
+			}
 
-		// Display results
-		selectStmt, ok := stmt.(*query.SelectStatement)
-		if !ok {
-			fmt.Println("❌ Invalid statement type")
-			os.Exit(1)
-		}
+			// Display results
+			selectStmt, ok := stmt.(*query.SelectStatement)
+			if !ok {
+				fmt.Println("❌ Invalid statement type")
+				os.Exit(1)
+			}
 
-		if len(selectStmt.Fields) > 0 {
-			if _, ok := selectStmt.Fields[0].(*query.FunctionExpression); ok {
-				// Aggregation query
-				fmt.Printf("Count: %d\n", result.Count)
-			} else {
-				// Regular SELECT query
-				if len(result.Rows) == 0 {
-					fmt.Println("No results found")
+			if len(selectStmt.Fields) > 0 {
+				if _, ok := selectStmt.Fields[0].(*query.FunctionExpression); ok {
+					// Aggregation query
+					fmt.Printf("Count: %d\n", result.Count)
 				} else {
-					fmt.Printf("🔍 Query results (%d rows):\n", len(result.Rows))
-					for i, row := range result.Rows {
-						fmt.Printf("%d. ", i+1)
-						for field, value := range row {
-							fmt.Printf("%s: %s  ", field, value)
+					// Regular SELECT query
+					if len(result.Rows) == 0 {
+						fmt.Println("No results found")
+					} else {
+						fmt.Printf("🔍 Query results (%d rows):\n", len(result.Rows))
+						for i, row := range result.Rows {
+							fmt.Printf("%d. ", i+1)
+							for field, value := range row {
+								fmt.Printf("%s: %s  ", field, value)
+							}
+							fmt.Println()
 						}
-						fmt.Println()
 					}
 				}
 			}
+		} else {
+			fmt.Println("❌ Query language not supported with partitioned stores")
 		}
 
 	case "help":
@@ -719,6 +760,53 @@ func createStore(format, indexType string) *kvstore.KVStore {
 	}
 
 	return kvstore.NewWithConfig(compactionConfig, storageConfig)
+}
+
+// StoreInterface defines the common interface for both regular and partitioned stores
+type StoreInterface interface {
+	Put(key, value string) error
+	Get(key string) (string, error)
+	Delete(key string) error
+	List() ([]string, error)
+	Compact() error
+}
+
+// ExtendedStoreInterface extends StoreInterface with additional methods
+type ExtendedStoreInterface interface {
+	StoreInterface
+	GetRange(start, end string) (map[string]string, error)
+	PrefixSearch(prefix string) (map[string]string, error)
+	ListSorted() ([]string, error)
+	GetCompactionStats() (kvstore.CompactionStats, error)
+	GetIndexStats() (map[string]interface{}, error)
+	RebuildIndex() error
+	ValidateIndex() error
+}
+
+func createStoreOrPartitioned(format, indexType string, partitions int) StoreInterface {
+	if partitions <= 1 {
+		return createStore(format, indexType)
+	}
+
+	// Validate partition count
+	if partitions > 16 {
+		log.Printf("Warning: partition count %d exceeds maximum 16, using 16", partitions)
+		partitions = 16
+	}
+
+	config := kvstore.PartitionConfig{
+		NumPartitions: partitions,
+		DataDir:       ".",
+		BatchSize:     100,
+		FlushInterval: 100 * time.Millisecond,
+	}
+
+	store, err := kvstore.NewPartitionedKVStore(config)
+	if err != nil {
+		log.Fatalf("Failed to create partitioned store: %v", err)
+	}
+
+	return store
 }
 
 func printUsage() {
