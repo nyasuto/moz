@@ -306,6 +306,60 @@ gh issue view 123 --json state,labels,assignees
 - **Integrated workflow**: Seamless integration with development process
 - **Error handling**: Better error messages and retry capabilities
 
+## Partition Directory Management
+
+### 🗂️ Partition Storage Configuration
+
+**Partition directories are automatically organized** to avoid cluttering the workspace:
+
+#### Default Configuration
+- **Partition Location**: `data/partitions/` (instead of current directory)
+- **Environment Override**: `MOZ_PARTITION_DIR` environment variable
+- **Directory Structure**: 
+  ```
+  data/partitions/
+  ├── partition_0/
+  ├── partition_1/
+  ├── partition_2/
+  └── partition_3/
+  ```
+
+#### Configuration Methods
+
+1. **Environment Variable (Recommended)**
+   ```bash
+   export MOZ_PARTITION_DIR="/path/to/partitions"
+   moz --partitions=4 put key value
+   ```
+
+2. **Default Behavior**
+   ```bash
+   # Creates partitions in data/partitions/ subdirectory
+   moz --partitions=4 put key value
+   ```
+
+3. **Programmatic Configuration**
+   ```go
+   config := kvstore.PartitionConfig{
+       NumPartitions: 4,
+       DataDir:       "custom/partition/path",
+       BatchSize:     100,
+       FlushInterval: 100 * time.Millisecond,
+   }
+   ```
+
+#### Benefits
+- **Clean Workspace**: No partition clutter in project root
+- **Organized Storage**: Dedicated directory structure
+- **Environment Flexibility**: Configurable storage location
+- **Easy Cleanup**: Single directory to remove when needed
+
+#### Partition File Structure
+Each partition contains:
+- `moz_p{id}.log` - Text format log file
+- `moz_p{id}.bin` - Binary format file (if enabled)  
+- `moz_p{id}.idx` - Index file (if enabled)
+
 ## Security Considerations
 
 ### Secrets Management
