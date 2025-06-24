@@ -794,12 +794,8 @@ func createStoreOrPartitioned(format, indexType string, partitions int) StoreInt
 		partitions = 16
 	}
 
-	config := kvstore.PartitionConfig{
-		NumPartitions: partitions,
-		DataDir:       ".",
-		BatchSize:     100,
-		FlushInterval: 100 * time.Millisecond,
-	}
+	config := kvstore.DefaultPartitionConfig()
+	config.NumPartitions = partitions
 
 	store, err := kvstore.NewPartitionedKVStore(config)
 	if err != nil {

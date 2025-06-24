@@ -20,9 +20,15 @@ type PartitionConfig struct {
 
 // DefaultPartitionConfig returns default partition configuration
 func DefaultPartitionConfig() PartitionConfig {
+	// Check for environment variable first
+	dataDir := os.Getenv("MOZ_PARTITION_DIR")
+	if dataDir == "" {
+		dataDir = "data/partitions" // Use dedicated subdirectory instead of current directory
+	}
+
 	return PartitionConfig{
 		NumPartitions: 4,
-		DataDir:       ".",
+		DataDir:       dataDir,
 		BatchSize:     100,
 		FlushInterval: 100 * time.Millisecond,
 	}
