@@ -40,14 +40,20 @@ type HashBucket struct {
 
 // HashIndex implements a hash table based index
 type HashIndex struct {
-	buckets []HashBucket
-	config  HashIndexConfig
-	count   int64
-	mu      sync.RWMutex
+	buckets   []HashBucket
+	config    HashIndexConfig
+	count     int64
+	mu        sync.RWMutex
+	entryPool IndexEntryPool // Optional memory pool for IndexEntry objects
 }
 
 // NewHashIndex creates a new hash index with the given configuration
 func NewHashIndex(config HashIndexConfig) (*HashIndex, error) {
+	return NewHashIndexWithPool(config, nil)
+}
+
+// NewHashIndexWithPool creates a new hash index with optional memory pool
+func NewHashIndexWithPool(config HashIndexConfig, entryPool IndexEntryPool) (*HashIndex, error) {
 	if config.InitialBuckets <= 0 {
 		return nil, fmt.Errorf("initial buckets must be positive")
 	}
@@ -59,9 +65,10 @@ func NewHashIndex(config HashIndexConfig) (*HashIndex, error) {
 	}
 
 	hi := &HashIndex{
-		buckets: make([]HashBucket, config.InitialBuckets),
-		config:  config,
-		count:   0,
+		buckets:   make([]HashBucket, config.InitialBuckets),
+		config:    config,
+		count:     0,
+		entryPool: entryPool,
 	}
 
 	// Initialize bucket mutexes
@@ -70,6 +77,13 @@ func NewHashIndex(config HashIndexConfig) (*HashIndex, error) {
 	}
 
 	return hi, nil
+}
+
+// SetEntryPool sets the memory pool for IndexEntry objects
+func (hi *HashIndex) SetEntryPool(pool IndexEntryPool) {
+	hi.mu.Lock()
+	defer hi.mu.Unlock()
+	hi.entryPool = pool
 }
 
 // hash computes hash value for a given key
@@ -197,6 +211,32 @@ func (hi *HashIndex) Keys() []string {
 	defer hi.mu.RUnlock()
 
 	keys := make([]string, 0, hi.count)
+
+	for i := range hi.buckets {
+		bucket := &hi.buckets[i]
+		bucket.mu.RLock()
+		for _, he := range bucket.entries {
+			keys = append(keys, he.Key)
+		}
+		bucket.mu.RUnlock()
+	}
+
+	sort.Strings(keys)
+	return keys
+}
+
+// KeysWithPrealloc returns all keys using pre-allocated slice for better memory efficiency
+func (hi *HashIndex) KeysWithPrealloc(keys []string) []string {
+	hi.mu.RLock()
+	defer hi.mu.RUnlock()
+
+	// Reset slice while preserving capacity
+	keys = keys[:0]
+
+	// Ensure we have enough capacity
+	if cap(keys) < int(hi.count) {
+		keys = make([]string, 0, hi.count)
+	}
 
 	for i := range hi.buckets {
 		bucket := &hi.buckets[i]

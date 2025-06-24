@@ -58,6 +58,9 @@ type KVStore struct {
 
 	// Index fields
 	indexManager *index.IndexManager
+
+	// Memory optimization fields
+	memoryOptimizer *MemoryOptimizer
 }
 
 func New() *KVStore {
@@ -106,7 +109,10 @@ func NewWithConfig(compactionConfig CompactionConfig, storageConfig StorageConfi
 		indexType = index.IndexTypeNone
 	}
 
-	indexManager, err := index.NewIndexManager(indexType)
+	// Initialize memory optimizer with default config first
+	memoryOptimizer := NewMemoryOptimizer(DefaultMemoryPoolConfig())
+
+	indexManager, err := index.NewIndexManagerWithPool(indexType, memoryOptimizer.GetPools())
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create index manager: %v", err))
 	}
@@ -122,6 +128,7 @@ func NewWithConfig(compactionConfig CompactionConfig, storageConfig StorageConfi
 		lastCompaction:   0,
 		isCompacting:     false,
 		indexManager:     indexManager,
+		memoryOptimizer:  memoryOptimizer,
 	}
 }
 
@@ -339,7 +346,14 @@ func (kv *KVStore) loadMemoryMap() error {
 		return nil
 	}
 
-	reader := NewLogReader(kv.logFile)
+	// Use shared memory pools if available
+	var reader *LogReader
+	if kv.memoryOptimizer != nil {
+		reader = NewLogReaderWithPools(kv.logFile, kv.memoryOptimizer.GetPools())
+	} else {
+		reader = NewLogReader(kv.logFile)
+	}
+
 	data, err := reader.ReadAll()
 	if err != nil {
 		return err
@@ -470,7 +484,14 @@ func (kv *KVStore) triggerAutoCompactionIfNeeded() {
 
 // calculateDeletedRatio calculates the ratio of deleted entries in the log
 func (kv *KVStore) calculateDeletedRatio() (float64, error) {
-	reader := NewLogReader(kv.logFile)
+	// Use shared memory pools if available
+	var reader *LogReader
+	if kv.memoryOptimizer != nil {
+		reader = NewLogReaderWithPools(kv.logFile, kv.memoryOptimizer.GetPools())
+	} else {
+		reader = NewLogReader(kv.logFile)
+	}
+
 	entries, err := reader.ReadAllEntries()
 	if err != nil {
 		return 0, err
@@ -522,6 +543,15 @@ type CompactionStats struct {
 	NextCompactionAt int     `json:"next_compaction_at"`
 }
 
+// MemoryStats holds memory optimization statistics
+type MemoryStats struct {
+	PoolStats           MemoryPoolStats `json:"pool_stats"`
+	Efficiency          PoolEfficiency  `json:"efficiency"`
+	GCStats             interface{}     `json:"gc_stats"`
+	MemoryUsage         interface{}     `json:"memory_usage"`
+	OptimizationEnabled bool            `json:"optimization_enabled"`
+}
+
 func (kv *KVStore) GetCompactionStats() (CompactionStats, error) {
 	ratio, _ := kv.calculateDeletedRatio()
 
@@ -543,6 +573,136 @@ func (kv *KVStore) GetCompactionStats() (CompactionStats, error) {
 // SetCompactionConfig updates the compaction configuration
 func (kv *KVStore) SetCompactionConfig(config CompactionConfig) {
 	kv.compactionConfig = config
+}
+
+// GetMemoryStats returns memory optimization statistics
+func (kv *KVStore) GetMemoryStats() MemoryStats {
+	if kv.memoryOptimizer == nil {
+		return MemoryStats{OptimizationEnabled: false}
+	}
+
+	pools := kv.memoryOptimizer.GetPools()
+	poolStats := pools.GetStats()
+	efficiency := pools.GetEfficiency()
+
+	// Get additional GC stats
+	gcStats := poolStats.LastGCStats
+	memStats := poolStats.MemoryUsage
+
+	return MemoryStats{
+		PoolStats:           poolStats,
+		Efficiency:          efficiency,
+		GCStats:             gcStats,
+		MemoryUsage:         memStats,
+		OptimizationEnabled: true,
+	}
+}
+
+// OptimizeMemory performs manual memory optimization
+func (kv *KVStore) OptimizeMemory() {
+	if kv.memoryOptimizer != nil {
+		kv.memoryOptimizer.GetPools().OptimizeGC()
+	}
+}
+
+// ForceGC forces garbage collection and returns memory stats
+func (kv *KVStore) ForceGC() (before, after interface{}) {
+	if kv.memoryOptimizer != nil {
+		beforeStats, afterStats := kv.memoryOptimizer.GetPools().ForceGC()
+		return beforeStats, afterStats
+	}
+	return nil, nil
+}
+
+// GetDetailedMemoryStats returns comprehensive memory statistics including GC metrics
+func (kv *KVStore) GetDetailedMemoryStats() map[string]interface{} {
+	stats := make(map[string]interface{})
+
+	if kv.memoryOptimizer == nil {
+		stats["optimization_enabled"] = false
+		return stats
+	}
+
+	pools := kv.memoryOptimizer.GetPools()
+	poolStats := pools.GetStats()
+	efficiency := pools.GetEfficiency()
+
+	// Pool statistics
+	stats["pool_stats"] = map[string]interface{}{
+		"log_entry_gets":      poolStats.LogEntryGets,
+		"log_entry_puts":      poolStats.LogEntryPuts,
+		"buffer_gets":         poolStats.BufferGets,
+		"buffer_puts":         poolStats.BufferPuts,
+		"index_entry_gets":    poolStats.IndexEntryGets,
+		"index_entry_puts":    poolStats.IndexEntryPuts,
+		"total_allocations":   poolStats.TotalAllocations,
+		"total_deallocations": poolStats.TotalDeallocations,
+		"last_update":         poolStats.LastUpdate,
+	}
+
+	// Efficiency metrics
+	stats["efficiency"] = map[string]interface{}{
+		"log_entry_efficiency":   efficiency.LogEntryEfficiency,
+		"buffer_efficiency":      efficiency.BufferEfficiency,
+		"index_entry_efficiency": efficiency.IndexEntryEfficiency,
+		"overall_efficiency":     efficiency.OverallEfficiency,
+		"pool_hit_rate":          efficiency.PoolHitRate,
+	}
+
+	// Memory usage stats
+	memStats := poolStats.MemoryUsage
+	stats["memory_usage"] = map[string]interface{}{
+		"alloc":           memStats.Alloc,
+		"total_alloc":     memStats.TotalAlloc,
+		"sys":             memStats.Sys,
+		"lookups":         memStats.Lookups,
+		"mallocs":         memStats.Mallocs,
+		"frees":           memStats.Frees,
+		"heap_alloc":      memStats.HeapAlloc,
+		"heap_sys":        memStats.HeapSys,
+		"heap_idle":       memStats.HeapIdle,
+		"heap_inuse":      memStats.HeapInuse,
+		"heap_released":   memStats.HeapReleased,
+		"heap_objects":    memStats.HeapObjects,
+		"stack_inuse":     memStats.StackInuse,
+		"stack_sys":       memStats.StackSys,
+		"gc_cpu_fraction": memStats.GCCPUFraction,
+	}
+
+	// GC statistics
+	gcStats := poolStats.LastGCStats
+	stats["gc_stats"] = map[string]interface{}{
+		"last_gc":         gcStats.LastGC,
+		"num_gc":          gcStats.NumGC,
+		"pause_total":     gcStats.PauseTotal,
+		"pause":           gcStats.Pause,
+		"pause_end":       gcStats.PauseEnd,
+		"pause_quantiles": gcStats.PauseQuantiles,
+	}
+
+	// KVStore specific stats
+	kvStats, _ := kv.GetStats()
+	compactionStats, _ := kv.GetCompactionStats()
+	indexStats, _ := kv.GetIndexStats()
+
+	stats["kvstore_stats"] = map[string]interface{}{
+		"memory_map_size": kvStats.MemoryMapSize,
+		"is_loaded":       kvStats.IsLoaded,
+	}
+
+	stats["compaction_stats"] = map[string]interface{}{
+		"enabled":            compactionStats.Enabled,
+		"operation_count":    compactionStats.OperationCount,
+		"last_compaction":    compactionStats.LastCompaction,
+		"deleted_ratio":      compactionStats.DeletedRatio,
+		"file_size":          compactionStats.FileSize,
+		"next_compaction_at": compactionStats.NextCompactionAt,
+	}
+
+	stats["index_stats"] = indexStats
+	stats["optimization_enabled"] = true
+
+	return stats
 }
 
 // GetRange returns entries within the specified key range [start, end]

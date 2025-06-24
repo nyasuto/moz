@@ -30,14 +30,20 @@ type BTreeNode struct {
 
 // BTreeIndex implements a B-tree based index for range queries and sorted access
 type BTreeIndex struct {
-	root   *BTreeNode
-	config BTreeIndexConfig
-	count  int64
-	mu     sync.RWMutex
+	root      *BTreeNode
+	config    BTreeIndexConfig
+	count     int64
+	mu        sync.RWMutex
+	entryPool IndexEntryPool // Optional memory pool for IndexEntry objects
 }
 
 // NewBTreeIndex creates a new B-tree index
 func NewBTreeIndex(config BTreeIndexConfig) (*BTreeIndex, error) {
+	return NewBTreeIndexWithPool(config, nil)
+}
+
+// NewBTreeIndexWithPool creates a new B-tree index with optional memory pool
+func NewBTreeIndexWithPool(config BTreeIndexConfig, entryPool IndexEntryPool) (*BTreeIndex, error) {
 	if config.Degree < 2 {
 		return nil, fmt.Errorf("b-tree degree must be at least 2")
 	}
@@ -50,8 +56,9 @@ func NewBTreeIndex(config BTreeIndexConfig) (*BTreeIndex, error) {
 			IsLeaf:   true,
 			Parent:   nil,
 		},
-		config: config,
-		count:  0,
+		config:    config,
+		count:     0,
+		entryPool: entryPool, // Store the memory pool
 	}, nil
 }
 

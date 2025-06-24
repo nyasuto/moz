@@ -243,6 +243,69 @@ Quality checks should be:
 - Architecture decision records (ADRs) for major decisions
 - Troubleshooting guides for common issues
 
+## GitHub Integration with MCP Tools
+
+### 🔧 MCP Tool Usage for GitHub Access
+
+**ALWAYS use MCP tools when accessing GitHub** - This provides better integration and functionality.
+
+#### Preferred GitHub Access Methods
+
+1. **WebFetch Tool for GitHub URLs**
+   ```
+   Use WebFetch tool to access GitHub pages:
+   - Pull requests: https://github.com/owner/repo/pull/123
+   - Issues: https://github.com/owner/repo/issues/123
+   - Commits: https://github.com/owner/repo/commit/hash
+   - Releases: https://github.com/owner/repo/releases
+   ```
+
+2. **GitHub CLI Integration**
+   ```bash
+   # Use gh command via Bash tool for GitHub operations
+   gh pr view 123           # View pull request details
+   gh issue view 123        # View issue details
+   gh pr create             # Create pull requests
+   gh issue create          # Create issues
+   gh repo view             # View repository information
+   ```
+
+3. **WebFetch Prompt Guidelines**
+   ```
+   When using WebFetch for GitHub URLs, use specific prompts:
+   - "Extract pull request details including title, status, description, comments, and reviews"
+   - "Get issue information including labels, assignees, status, and discussion"
+   - "Summarize commit details including changes, files modified, and commit message"
+   ```
+
+#### GitHub Access Workflow
+
+1. **Always try MCP tools first** before manual URL construction
+2. **Use WebFetch** for viewing GitHub content (PRs, issues, commits)
+3. **Use Bash + gh command** for GitHub operations (create, update, merge)
+4. **Verify results** by re-fetching the updated content via MCP
+
+#### Examples
+
+```bash
+# Create PR using gh command
+gh pr create --title "feat: new feature" --body "Description"
+
+# View PR using WebFetch
+WebFetch: https://github.com/owner/repo/pull/123
+Prompt: "Extract all PR details including status and reviews"
+
+# Check issue status
+gh issue view 123 --json state,labels,assignees
+```
+
+### MCP Tool Benefits for GitHub
+
+- **Real-time data**: Always gets current GitHub state
+- **Rich content**: Extracts formatted information and metadata
+- **Integrated workflow**: Seamless integration with development process
+- **Error handling**: Better error messages and retry capabilities
+
 ## Security Considerations
 
 ### Secrets Management
