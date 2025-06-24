@@ -56,7 +56,7 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 			continue
 		}
 		if value != test.value {
-			t.Errorf("Get returned wrong value for %s: got %s, want %s", 
+			t.Errorf("Get returned wrong value for %s: got %s, want %s",
 				test.key, value, test.value)
 		}
 	}
@@ -67,7 +67,7 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 		t.Fatalf("List failed: %v", err)
 	}
 	if len(keys) != len(tests) {
-		t.Errorf("List returned wrong number of keys: got %d, want %d", 
+		t.Errorf("List returned wrong number of keys: got %d, want %d",
 			len(keys), len(tests))
 	}
 
@@ -95,7 +95,7 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 			continue
 		}
 		if value != test.value {
-			t.Errorf("Get returned wrong value for %s after delete: got %s, want %s", 
+			t.Errorf("Get returned wrong value for %s after delete: got %s, want %s",
 				test.key, value, test.value)
 		}
 	}
@@ -159,14 +159,14 @@ func TestPartitionedKVStore_Concurrency(t *testing.T) {
 		for j := 0; j < entriesPerGoroutine; j++ {
 			key := fmt.Sprintf("worker%d_key%d", i, j)
 			expectedValue := fmt.Sprintf("worker%d_value%d", i, j)
-			
+
 			value, err := store.Get(key)
 			if err != nil {
 				t.Errorf("Get failed for %s: %v", key, err)
 				continue
 			}
 			if value != expectedValue {
-				t.Errorf("Get returned wrong value for %s: got %s, want %s", 
+				t.Errorf("Get returned wrong value for %s: got %s, want %s",
 					key, value, expectedValue)
 			}
 		}
@@ -179,7 +179,7 @@ func TestPartitionedKVStore_BatchFlush(t *testing.T) {
 	config := PartitionConfig{
 		NumPartitions: 2,
 		DataDir:       tempDir,
-		BatchSize:     5, // Small batch size for testing
+		BatchSize:     5,               // Small batch size for testing
 		FlushInterval: 1 * time.Second, // Long interval to test manual flush
 	}
 
@@ -220,14 +220,14 @@ func TestPartitionedKVStore_BatchFlush(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("key%d", i)
 		expectedValue := fmt.Sprintf("value%d", i)
-		
+
 		value, err := store.Get(key)
 		if err != nil {
 			t.Errorf("Get failed for %s: %v", key, err)
 			continue
 		}
 		if value != expectedValue {
-			t.Errorf("Get returned wrong value for %s: got %s, want %s", 
+			t.Errorf("Get returned wrong value for %s: got %s, want %s",
 				key, value, expectedValue)
 		}
 	}
@@ -299,7 +299,7 @@ func TestPartitionedKVStore_Statistics(t *testing.T) {
 		totalFromPartitions += entries
 	}
 	if totalFromPartitions != 15 {
-		t.Errorf("Sum of partition entries (%d) doesn't match total (%d)", 
+		t.Errorf("Sum of partition entries (%d) doesn't match total (%d)",
 			totalFromPartitions, 15)
 	}
 }
@@ -363,7 +363,7 @@ func TestPartitionedKVStore_Compaction(t *testing.T) {
 	}
 
 	if len(keys) != len(expectedKeys) {
-		t.Errorf("Expected %d keys after compaction, got %d", 
+		t.Errorf("Expected %d keys after compaction, got %d",
 			len(expectedKeys), len(keys))
 	}
 
@@ -371,14 +371,14 @@ func TestPartitionedKVStore_Compaction(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		key := fmt.Sprintf("key%d", i)
 		expectedValue := fmt.Sprintf("updated_value%d", i)
-		
+
 		value, err := store.Get(key)
 		if err != nil {
 			t.Errorf("Get failed for %s after compaction: %v", key, err)
 			continue
 		}
 		if value != expectedValue {
-			t.Errorf("Get returned wrong updated value for %s: got %s, want %s", 
+			t.Errorf("Get returned wrong updated value for %s: got %s, want %s",
 				key, value, expectedValue)
 		}
 	}
@@ -449,7 +449,7 @@ func TestPartitionedKVStore_PartitionDistribution(t *testing.T) {
 	// With 1000 entries and 4 partitions, it's very unlikely any partition would be empty
 	// if the hash distribution is working properly
 	if emptyPartitions > 0 {
-		t.Errorf("Found %d empty partitions out of %d - distribution may be poor", 
+		t.Errorf("Found %d empty partitions out of %d - distribution may be poor",
 			emptyPartitions, config.NumPartitions)
 	}
 
@@ -475,7 +475,7 @@ func TestPartitionedKVStore_Configuration(t *testing.T) {
 	for _, config := range invalidConfigs {
 		_, err := NewPartitionedKVStore(config)
 		if err == nil {
-			t.Errorf("Expected error for invalid config with %d partitions", 
+			t.Errorf("Expected error for invalid config with %d partitions",
 				config.NumPartitions)
 		}
 	}

@@ -134,7 +134,7 @@ func main() {
 
 	case "stats":
 		fmt.Printf("📊 Storage Statistics:\n")
-		
+
 		// Try to get extended stats if available
 		if extStore, ok := store.(ExtendedStoreInterface); ok {
 			stats, err := extStore.GetCompactionStats()

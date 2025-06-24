@@ -12,9 +12,9 @@ import (
 
 // PartitionConfig holds configuration for partitioned storage
 type PartitionConfig struct {
-	NumPartitions int    // Number of partitions (1-16)
-	DataDir       string // Base directory for partition files
-	BatchSize     int    // Batch size for group writes
+	NumPartitions int           // Number of partitions (1-16)
+	DataDir       string        // Base directory for partition files
+	BatchSize     int           // Batch size for group writes
 	FlushInterval time.Duration // Interval for auto-flush
 }
 
@@ -50,16 +50,15 @@ type PartitionedKVStore struct {
 	config     PartitionConfig
 	partitions []*Partition
 	hashFunc   func(string) uint32
-	poolMutex  sync.RWMutex
-	
+
 	// Memory pools for reduced GC pressure
-	entryPool    sync.Pool
-	bufferPool   sync.Pool
-	
+	entryPool  sync.Pool
+	bufferPool sync.Pool
+
 	// Background flush management
-	flushTicker  *time.Ticker
-	flushStop    chan struct{}
-	flushWg      sync.WaitGroup
+	flushTicker *time.Ticker
+	flushStop   chan struct{}
+	flushWg     sync.WaitGroup
 }
 
 // NewPartitionedKVStore creates a new partitioned KV store
@@ -69,10 +68,10 @@ func NewPartitionedKVStore(config PartitionConfig) (*PartitionedKVStore, error) 
 	}
 
 	store := &PartitionedKVStore{
-		config:      config,
-		partitions:  make([]*Partition, config.NumPartitions),
-		hashFunc:    hashString,
-		flushStop:   make(chan struct{}),
+		config:     config,
+		partitions: make([]*Partition, config.NumPartitions),
+		hashFunc:   hashString,
+		flushStop:  make(chan struct{}),
 		entryPool: sync.Pool{
 			New: func() interface{} { return &BatchEntry{} },
 		},
@@ -152,9 +151,12 @@ func (pks *PartitionedKVStore) Put(key, value string) error {
 	}
 
 	partition := pks.getPartition(key)
-	
+
 	// Get entry from pool
-	entry := pks.entryPool.Get().(*BatchEntry)
+	entry, ok := pks.entryPool.Get().(*BatchEntry)
+	if !ok {
+		entry = &BatchEntry{}
+	}
 	entry.Key = key
 	entry.Value = value
 	entry.Operation = "PUT"
@@ -177,7 +179,7 @@ func (pks *PartitionedKVStore) Put(key, value string) error {
 // Get retrieves a value by key
 func (pks *PartitionedKVStore) Get(key string) (string, error) {
 	partition := pks.getPartition(key)
-	
+
 	// Check batch buffer first (most recent writes)
 	partition.bufferMutex.Lock()
 	for i := len(partition.batchBuffer) - 1; i >= 0; i-- {
@@ -205,9 +207,12 @@ func (pks *PartitionedKVStore) Delete(key string) error {
 	}
 
 	partition := pks.getPartition(key)
-	
+
 	// Get entry from pool
-	entry := pks.entryPool.Get().(*BatchEntry)
+	entry, ok := pks.entryPool.Get().(*BatchEntry)
+	if !ok {
+		entry = &BatchEntry{}
+	}
 	entry.Key = key
 	entry.Value = ""
 	entry.Operation = "DELETE"
@@ -243,7 +248,7 @@ func (pks *PartitionedKVStore) List() ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to list partition %d: %w", partition.id, err)
 		}
-		
+
 		for _, key := range keys {
 			if !keySet[key] {
 				keySet[key] = true
@@ -267,7 +272,7 @@ func (pks *PartitionedKVStore) flushPartition(partition *Partition) error {
 	// Copy buffer for processing
 	buffer := make([]*BatchEntry, len(partition.batchBuffer))
 	copy(buffer, partition.batchBuffer)
-	
+
 	// Clear buffer and update flush time
 	partition.batchBuffer = partition.batchBuffer[:0]
 	partition.lastFlush = time.Now()
@@ -276,18 +281,19 @@ func (pks *PartitionedKVStore) flushPartition(partition *Partition) error {
 	// Process batch entries
 	for _, entry := range buffer {
 		var err error
-		if entry.Operation == "PUT" {
+		switch entry.Operation {
+		case "PUT":
 			err = partition.store.Put(entry.Key, entry.Value)
-		} else if entry.Operation == "DELETE" {
+		case "DELETE":
 			err = partition.store.Delete(entry.Key)
 		}
-		
+
 		if err != nil {
 			// Return entry to pool and return error
 			pks.entryPool.Put(entry)
 			return fmt.Errorf("batch operation failed on partition %d: %w", partition.id, err)
 		}
-		
+
 		// Return entry to pool
 		pks.entryPool.Put(entry)
 	}
@@ -308,7 +314,7 @@ func (pks *PartitionedKVStore) FlushAll() error {
 // backgroundFlush runs periodic flush operations
 func (pks *PartitionedKVStore) backgroundFlush() {
 	defer pks.flushWg.Done()
-	
+
 	for {
 		select {
 		case <-pks.flushTicker.C:
@@ -316,20 +322,20 @@ func (pks *PartitionedKVStore) backgroundFlush() {
 			now := time.Now()
 			for _, partition := range pks.partitions {
 				partition.bufferMutex.Lock()
-				needsFlush := len(partition.batchBuffer) > 0 && 
+				needsFlush := len(partition.batchBuffer) > 0 &&
 					now.Sub(partition.lastFlush) >= pks.config.FlushInterval
 				partition.bufferMutex.Unlock()
-				
+
 				if needsFlush {
 					if err := pks.flushPartition(partition); err != nil {
-						fmt.Printf("Warning: background flush failed for partition %d: %v\n", 
+						fmt.Printf("Warning: background flush failed for partition %d: %v\n",
 							partition.id, err)
 					}
 				}
 			}
 		case <-pks.flushStop:
 			// Final flush before shutdown
-			pks.FlushAll()
+			_ = pks.FlushAll()
 			return
 		}
 	}
@@ -399,18 +405,18 @@ func (pks *PartitionedKVStore) GetStats() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get stats for partition %d: %w", i, err)
 		}
-		
+
 		partitionInfo := map[string]interface{}{
-			"id":         i,
-			"entries":    pStats.MemoryMapSize,
-			"is_loaded":  pStats.IsLoaded,
+			"id":        i,
+			"entries":   pStats.MemoryMapSize,
+			"is_loaded": pStats.IsLoaded,
 		}
-		
+
 		// Add buffer info
 		partition.bufferMutex.Lock()
 		partitionInfo["buffer_size"] = len(partition.batchBuffer)
 		partition.bufferMutex.Unlock()
-		
+
 		partitionStats = append(partitionStats, partitionInfo)
 		totalEntries += pStats.MemoryMapSize
 	}
@@ -442,18 +448,18 @@ func (pks *PartitionedKVStore) GetPartitionedStats() (map[string]interface{}, er
 		if err != nil {
 			return nil, fmt.Errorf("failed to get stats for partition %d: %w", i, err)
 		}
-		
+
 		partitionInfo := map[string]interface{}{
-			"id":         i,
-			"entries":    pStats.MemoryMapSize,
-			"is_loaded":  pStats.IsLoaded,
+			"id":        i,
+			"entries":   pStats.MemoryMapSize,
+			"is_loaded": pStats.IsLoaded,
 		}
-		
+
 		// Add buffer info
 		partition.bufferMutex.Lock()
 		partitionInfo["buffer_size"] = len(partition.batchBuffer)
 		partition.bufferMutex.Unlock()
-		
+
 		partitionStats = append(partitionStats, partitionInfo)
 		totalEntries += pStats.MemoryMapSize
 	}
