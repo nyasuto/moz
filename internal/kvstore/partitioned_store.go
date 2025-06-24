@@ -25,7 +25,7 @@ func DefaultPartitionConfig() PartitionConfig {
 	if dataDir == "" {
 		dataDir = "data/partitions" // Use dedicated subdirectory instead of current directory
 	}
-	
+
 	return PartitionConfig{
 		NumPartitions: 4,
 		DataDir:       dataDir,
