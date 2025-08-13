@@ -14,7 +14,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v5
@@ -76,7 +76,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v5
@@ -117,7 +117,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v5
@@ -189,7 +189,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v5
@@ -232,7 +232,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🔍 シークレットスキャン
         run: |
@@ -262,7 +262,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: 🔍 ブランチ名チェック
         run: |
