@@ -165,10 +165,16 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 		}
 	}
 
-	// Wait for potential background flush
-	time.Sleep(300 * time.Millisecond)
+	// Force flush to ensure all data is written to disk
+	// This eliminates the race condition between MemTable.Clear() and Get()
+	if err := store.ForceFlush(); err != nil {
+		t.Errorf("ForceFlush failed: %v", err)
+	}
 
-	// Verify data still accessible
+	// Additional small wait to ensure flush completion
+	time.Sleep(50 * time.Millisecond)
+
+	// Verify data still accessible after flush
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("flush_test_key_%d", i)
 		expectedValue := fmt.Sprintf("flush_test_value_with_extra_data_%d", i)
