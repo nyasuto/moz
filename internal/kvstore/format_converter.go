@@ -298,9 +298,9 @@ func (s *BinaryFileStats) String() string {
 		avgValueSize := float64(s.TotalValueSize) / float64(s.EntryCount)
 		deletionRate := float64(s.DeletedCount) / float64(s.EntryCount) * 100
 
-		sb.WriteString(fmt.Sprintf("Average Key Size: %.1f bytes\n", avgKeySize))
-		sb.WriteString(fmt.Sprintf("Average Value Size: %.1f bytes\n", avgValueSize))
-		sb.WriteString(fmt.Sprintf("Deletion Rate: %.1f%%\n", deletionRate))
+		fmt.Fprintf(&sb, "Average Key Size: %.1f bytes\n", avgKeySize)
+		fmt.Fprintf(&sb, "Average Value Size: %.1f bytes\n", avgValueSize)
+		fmt.Fprintf(&sb, "Deletion Rate: %.1f%%\n", deletionRate)
 	}
 
 	return sb.String()
