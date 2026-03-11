@@ -279,18 +279,18 @@ type BinaryFileStats struct {
 func (s *BinaryFileStats) String() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Binary File Statistics: %s\n", s.Filename))
-	sb.WriteString(fmt.Sprintf("File Size: %s\n", formatBytes(s.FileSize)))
-	sb.WriteString(fmt.Sprintf("Total Entries: %d\n", s.EntryCount))
-	sb.WriteString(fmt.Sprintf("Active Entries: %d\n", s.ActiveCount))
-	sb.WriteString(fmt.Sprintf("Deleted Entries: %d\n", s.DeletedCount))
-	sb.WriteString(fmt.Sprintf("Total Key Size: %s\n", formatBytes(s.TotalKeySize)))
-	sb.WriteString(fmt.Sprintf("Total Value Size: %s\n", formatBytes(s.TotalValueSize)))
+	fmt.Fprintf(&sb, "Binary File Statistics: %s\n", s.Filename)
+	fmt.Fprintf(&sb, "File Size: %s\n", formatBytes(s.FileSize))
+	fmt.Fprintf(&sb, "Total Entries: %d\n", s.EntryCount)
+	fmt.Fprintf(&sb, "Active Entries: %d\n", s.ActiveCount)
+	fmt.Fprintf(&sb, "Deleted Entries: %d\n", s.DeletedCount)
+	fmt.Fprintf(&sb, "Total Key Size: %s\n", formatBytes(s.TotalKeySize))
+	fmt.Fprintf(&sb, "Total Value Size: %s\n", formatBytes(s.TotalValueSize))
 
 	if !s.EarliestTimestamp.IsZero() {
-		sb.WriteString(fmt.Sprintf("Time Range: %s to %s\n",
+		fmt.Fprintf(&sb, "Time Range: %s to %s\n",
 			s.EarliestTimestamp.Format(time.RFC3339),
-			s.LatestTimestamp.Format(time.RFC3339)))
+			s.LatestTimestamp.Format(time.RFC3339))
 	}
 
 	if s.EntryCount > 0 {
