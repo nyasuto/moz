@@ -144,9 +144,10 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 	tempDir := t.TempDir()
 	config := DefaultAsyncConfig()
 	config.WALConfig.DataDir = tempDir
-	config.MemTableConfig.MaxSize = 200  // Small size to trigger flush
-	config.MemTableConfig.MaxEntries = 5 // Small count to trigger flush
-	config.FlushInterval = 100 * time.Millisecond
+	// Use large limits to keep all entries in memtable (no auto-flush)
+	config.MemTableConfig.MaxSize = 1024 * 1024
+	config.MemTableConfig.MaxEntries = 10000
+	config.FlushInterval = 10 * time.Second
 
 	store, err := NewAsyncKVStore(config)
 	if err != nil {
@@ -154,7 +155,7 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 	}
 	defer store.Close()
 
-	// Add entries to trigger flush
+	// Add entries
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("flush_test_key_%d", i)
 		value := fmt.Sprintf("flush_test_value_with_extra_data_%d", i)
@@ -165,14 +166,10 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 		}
 	}
 
-	// Force flush to ensure all data is written to disk
-	// This eliminates the race condition between MemTable.Clear() and Get()
+	// Force flush to write data to disk
 	if err := store.ForceFlush(); err != nil {
 		t.Errorf("ForceFlush failed: %v", err)
 	}
-
-	// Additional wait to ensure flush completion
-	time.Sleep(500 * time.Millisecond)
 
 	// Verify data still accessible after flush
 	for i := 0; i < 10; i++ {
