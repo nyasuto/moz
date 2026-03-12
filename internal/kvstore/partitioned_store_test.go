@@ -47,6 +47,7 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 	if err := store.FlushAll(); err != nil {
 		t.Fatalf("FlushAll failed: %v", err)
 	}
+	time.Sleep(500 * time.Millisecond)
 
 	// Test Get operations
 	for _, test := range tests {
@@ -407,7 +408,10 @@ func TestPartitionedKVStore_PartitionDistribution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond) // Wait for background goroutines to finish
+	}()
 
 	// Add many entries to test distribution
 	numEntries := 1000
