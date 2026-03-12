@@ -23,7 +23,10 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Test basic operations
 	tests := []struct {
@@ -116,7 +119,10 @@ func TestPartitionedKVStore_Concurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Concurrent write test
 	numGoroutines := 10
@@ -188,7 +194,10 @@ func TestPartitionedKVStore_BatchFlush(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Add entries below batch size threshold
 	for i := 0; i < 3; i++ {
@@ -248,7 +257,10 @@ func TestPartitionedKVStore_Statistics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Add some test data
 	for i := 0; i < 15; i++ {
@@ -319,7 +331,10 @@ func TestPartitionedKVStore_Compaction(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create partitioned store: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Add initial data
 	for i := 0; i < 10; i++ {
@@ -496,7 +511,10 @@ func TestPartitionedKVStore_Configuration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store with valid config: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Verify configuration is applied
 	if store.config.NumPartitions != 8 {

@@ -19,7 +19,10 @@ func TestAsyncKVStore_BasicAsyncOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Test async put
 	result := store.AsyncPut("async_key1", "async_value1")
@@ -64,7 +67,10 @@ func TestAsyncKVStore_SyncFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Operations should still work but synchronously
 	result := store.AsyncPut("sync_key", "sync_value")
@@ -91,7 +97,10 @@ func TestAsyncKVStore_ConcurrentOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	numGoroutines := 5
 	entriesPerGoroutine := 10
@@ -153,7 +162,10 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Add entries
 	for i := 0; i < 10; i++ {
@@ -196,7 +208,10 @@ func TestAsyncKVStore_Statistics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Perform some operations
 	for i := 0; i < 5; i++ {
@@ -260,7 +275,10 @@ func TestAsyncKVStore_ListOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Add entries (some in MemTable, some on disk)
 	memEntries := []string{"mem1", "mem2", "mem3"}
@@ -312,7 +330,10 @@ func TestAsyncKVStore_ErrorHandling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create AsyncKVStore: %v", err)
 	}
-	defer store.Close()
+	defer func() {
+		store.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	// Test invalid key
 	result := store.AsyncPut("key\twith\ttab", "value") // Key with tab should be invalid
