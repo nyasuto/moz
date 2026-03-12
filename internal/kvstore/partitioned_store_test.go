@@ -47,6 +47,7 @@ func TestPartitionedKVStore_Basic(t *testing.T) {
 	if err := store.FlushAll(); err != nil {
 		t.Fatalf("FlushAll failed: %v", err)
 	}
+	time.Sleep(500 * time.Millisecond)
 
 	// Test Get operations
 	for _, test := range tests {

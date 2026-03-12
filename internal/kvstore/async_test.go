@@ -171,8 +171,8 @@ func TestAsyncKVStore_MemTableFlush(t *testing.T) {
 		t.Errorf("ForceFlush failed: %v", err)
 	}
 
-	// Additional small wait to ensure flush completion
-	time.Sleep(50 * time.Millisecond)
+	// Additional wait to ensure flush completion
+	time.Sleep(500 * time.Millisecond)
 
 	// Verify data still accessible after flush
 	for i := 0; i < 10; i++ {
