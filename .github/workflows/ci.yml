@@ -14,7 +14,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v6
@@ -68,6 +68,7 @@ jobs:
         with:
           go-version-input: 'stable'
           go-package: './...'
+          repo-checkout: false
 
   performance-tests:
     name: 📊 性能テスト
@@ -76,7 +77,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v6
@@ -117,7 +118,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v6
@@ -189,7 +190,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🐹 Go言語セットアップ
         uses: actions/setup-go@v6
@@ -232,7 +233,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🔍 シークレットスキャン
         run: |
@@ -262,7 +263,7 @@ jobs:
     
     steps:
       - name: 📥 チェックアウト
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         
       - name: 🔍 ブランチ名チェック
         run: |
