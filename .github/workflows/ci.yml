@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v7
         
       - name: 🐹 Go言語セットアップ
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
           cache: true
@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v7
         
       - name: 🐹 Go言語セットアップ
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
           cache: true
@@ -121,7 +121,7 @@ jobs:
         uses: actions/checkout@v7
         
       - name: 🐹 Go言語セットアップ
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
           cache: true
@@ -193,7 +193,7 @@ jobs:
         uses: actions/checkout@v7
         
       - name: 🐹 Go言語セットアップ
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
           cache: true
